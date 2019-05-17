@@ -29,19 +29,29 @@
         keep = !keep, count++) \
 
 #define POP_SIZE 10
-#define SIM_TIME 5
+#define SIM_TIME 10
 #define ID_KEY 'a'
+#define KO 44
+#define K1 33
 
 
 //==== variabili processi ====
 int status;
 
 struct sigaction sa, sa_old;
+struct my_msg msg_queue;
 
 //==== variabili strutture ====
 key_t key;
 int sem_id;
 int shmem_id;
+int msg_id;
+
+
+struct my_msg {
+    long mtype;
+    pid_t student_dest;
+};
 
 
 union semun {
@@ -87,7 +97,8 @@ int getConfigValue(char line[1]) {
 }
 
 int *read_config() {
-    FILE *f = fopen("opt.conf", "r");
+
+    FILE *f = fopen("opt.conf", "r+");
 
     char nof_elems2_toConvert[20];
     char nof_elems3_toConvert[20];
@@ -171,6 +182,12 @@ struct student {
     int voto_AdE;
 };
 
+struct gruppo {
+    struct student students[4];
+    int chiuso;
+    int voto;
+};
+
 struct shdata {
     struct student students[POP_SIZE];
     int config_values[4];
@@ -202,6 +219,7 @@ int getNof_elems() {
 }
 
 void signal_handler(int signalVal);
+
 void start_sim_time();
 
 

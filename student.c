@@ -88,6 +88,7 @@ void init() {
 void openipc() {
     sa.sa_handler = &signal_handler;
     sigaction(SIGINT, &sa, &saold);
+    //message per padre
     msgid = msgget(getppid(), IPC_CREAT);
     TEST_ERROR;
     //se il pid(matricola) è pari

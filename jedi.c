@@ -5,12 +5,13 @@ int main(int argc, char *argv[]) {
 
     printf("==== PADRE[%d] STARTING SIMULATION ====\n", getpid());
     init();
-
+    TEST_ERROR
 
 
     printf("==== END INITIALIZATION ====\n"
            " \n - Nof_Students = %d\n"
-           " - sem key = %d\n", POP_SIZE, key);
+           " - sh_id  = %d\n"
+           " - sem_id = %d\n", POP_SIZE, shmem_id, sem_id);
 
 
     for (int i = 0; i < POP_SIZE; i++) {
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
             //da verificare questo passaggio non mi piace come verifica l'errore
             TEST_ERROR;
         } else {
-            execve("padawan", NULL, NULL);
+             execve("padawan", NULL, NULL);
             TEST_ERROR;
         }
     }
@@ -67,16 +68,18 @@ void signal_handler(int signalVal) {
 void init() {
 
     key = setKey();
-
+    TEST_ERROR
     //creo set di 2 semafori
     // uno per sh_data e uno per
     sem_id = semget(key, 2, IPC_CREAT | 0666);
     shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
     shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
+    TEST_ERROR
+    msg_id = msgget(key, IPC_CREAT | 0666);
 
     //mi accerto che le IPC siano st
     // ate create
-    if (sem_id == -1 || shmem_id == -1) {
+    if (sem_id == -1 || shmem_id == -1 || msg_id == -1) {
         TEST_ERROR
     }
 
@@ -104,7 +107,7 @@ void init() {
     start_sim_time();
 }
 
-void start_sim_time(){
+void start_sim_time() {
     reserveSem(1);
     int length = sizeof(shdata_pointer->students) / sizeof(shdata_pointer->students[0]);
     if (length == POP_SIZE) {

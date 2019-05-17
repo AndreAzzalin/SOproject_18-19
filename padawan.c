@@ -9,6 +9,55 @@ int main(int argc, char *argv[]) {
 
     while (1) {
 
+        //uso il sem0 per capire quando tutti i processi sono stati caricati
+
+        if (getSemVal(0) == 0) {
+
+            sleep(1);
+            printf("---[%d]---"
+                   "semval= %d\n", getpid(), getSemVal(0));
+
+             while (msgrcv(msg_id, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) == sizeof(msg_queue) - sizeof(long)) {
+                 printf("sono[%d] RICEVUTO msg da (%d)\n", getpid(),msg_queue.student_dest);
+             }
+
+
+            //destinatario
+            msg_queue.mtype = getpid()+1;
+             //mittente
+            msg_queue.student_dest = getpid();
+
+             if (msgsnd(msg_id, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0) {
+                  TEST_ERROR
+              } else {
+                  printf("[%d] msg send with %d\n", getpid(), msg_queue.student_dest);
+              }
+
+
+
+        }
+
+
+
+
+
+
+        /*  printf("---[%d]---\n",getpid());
+          msg_queue.student_dest = getpid();
+
+          if (msgsnd(msg_id, &msg_queue, sizeof(msg_queue) - sizeof(long), 0)) {
+              printf("[%d] msg send\n", getpid());
+          }
+          releaseSem(1);
+
+
+          reserveSem(1);
+          while (msgrcv(msg_id, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), 0)) {
+              printf("[%d] msg received\n", getpid());
+          }
+          releaseSem(1);*/
+
+
     }
 }
 
@@ -25,6 +74,12 @@ void init() {
 
     shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
     shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
+
+
+    msg_id = msgget(KO, IPC_CREAT | 0666);
+
+
+    TEST_ERROR
 
 
     //inizializzo le variabili che caratterizzano uno studente
