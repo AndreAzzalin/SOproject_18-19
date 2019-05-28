@@ -17,26 +17,35 @@
         dprintf(STDERR_FILENO,"%s:%d: PID=%5d: Error %d (%s)\n", \
                            __FILE__, __LINE__, getpid(), errno, strerror(errno));}
 
-#define for_each_item(item, list) \
-    for(T * item = list->head; item != NULL; item = item->next)
 
+#define TRUE 1
+#define FALSE 0
 
-#define foreach(item, array) \
-    for(int keep = 1, \
-            count = 0,\
-            size = sizeof (array) / sizeof *(array); \
-        keep && count != size; \
-        keep = !keep, count++) \
+#define INDEX getpid()%POP_SIZE
+
+#define INVITO 1
+#define REPLY 0
+
+#define PARI getpid()%2==0
+#define DISPARI getpid()%2!=0
 
 #define POP_SIZE 10
-#define SIM_TIME 10
-#define ID_KEY 'a'
-#define KO 44
-#define K1 33
+#define SIM_TIME 5
 
+#define ID_KEY 'a'
+#define KEY_PARI 2
+#define KEY_DISPARI 1
+
+//variabili personali per ogni studente
+int toReply_dest ;
+int toReply_mitt  ;
+int toReply_type  ;
 
 //==== variabili processi ====
 int status;
+pid_t my_pid;
+
+
 
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
@@ -46,11 +55,17 @@ key_t key;
 int sem_id;
 int shmem_id;
 int msg_id;
+int msg_pari;
+int msg_dispari;
+
+int indx;
 
 
 struct my_msg {
     long mtype;
-    pid_t student_dest;
+    pid_t student_mitt;
+    int oggetto;
+
 };
 
 
@@ -121,7 +136,7 @@ int *read_config() {
     fclose(f);
 
 
-    static int configVariables[4];
+    static int configVariables[5];
 
     configVariables[0] = nof_elems2;
     configVariables[1] = nof_elems3;
@@ -180,17 +195,20 @@ struct student {
     pid_t matricola;
     int nof_elems;
     int voto_AdE;
+    int libero;
 };
 
 struct gruppo {
-    struct student students[4];
+    pid_t capo;
+    pid_t compagni[4];
     int chiuso;
     int voto;
 };
 
 struct shdata {
     struct student students[POP_SIZE];
-    int config_values[4];
+    struct gruppo groups[POP_SIZE];
+    int config_values[5];
 };
 
 struct shdata *shdata_pointer;
@@ -222,4 +240,10 @@ void signal_handler(int signalVal);
 
 void start_sim_time();
 
+void setStudentPref();
 
+pid_t search_colleagues(int my_nof_elems,int my_voto_AdE,int my_matricola);
+
+int checkPariDispari(int matricola_to_compare);
+
+int getMsgQueue();
