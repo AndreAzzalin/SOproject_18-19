@@ -20,12 +20,8 @@ int main(int argc, char *argv[]) {
     while (1) {
 
         //uso il sem0 per capire quando tutti i processi sono stati caricati
-
-
         if (getSemVal(0) == 0) {
 
-
-            // printf("[%d] found= %d\n ", getpid(),search_colleagues(my_nof_elems, my_voto_AdE));
 
             //prima rispondo e poi invio msg
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
@@ -35,36 +31,24 @@ int main(int argc, char *argv[]) {
 
                     //caso 2 : ricevo invito
                     case INVITO:
+                     //   printf("[%d] RICEVUTO msg tipo INVITO da (%d)\n", getpid(), msg_queue.student_mitt);
 
-
-                       // printf("sono[%d] RICEVUTO msg tipo INVITO da (%d)\n", getpid(), msg_queue.student_mitt);
-                        //controllo se compatibile
+                        //controllo se compatibile (double check)
                         reserveSem(1);
                         int var = shdata_pointer->students[msg_queue.student_mitt % POP_SIZE].voto_AdE;
                         int var2 = shdata_pointer->students[msg_queue.student_mitt % POP_SIZE].matricola;
                         releaseSem(1);
 
-
                         if (var >= my_voto_AdE && var2 != getpid()) {
 
-                            //accetto
-                            toReply_dest = msg_queue.student_mitt;
-                            msg_queue.mtype = toReply_dest;
-                            msg_queue.student_mitt = getpid();
-                            msg_queue.oggetto = REPLY;
+                            //caso 2.1: se compatibile accetto
+                            accept();
 
-
-                            printf("sono [%d] ACCETTO | mitt %d | dest %d | invites %d \n ", getpid(), msg_queue.student_mitt,
-                                   (int) msg_queue.mtype,nof_invites);
-
-                            if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0) {
-                                TEST_ERROR
-                            }
-
+                            //caso 2.1: se non compatibile rifiuto
                         } else {
-                            printf("sono [%d] RIFIUTO %d | reject %d \n", getpid(), msg_queue.student_mitt,nof_reject);
-                            nof_reject--;
-                            break;
+                            //caso 2.2 : non compatibile ma nof_reject finiti
+                            refuse();
+
                         }
 
 
@@ -117,9 +101,49 @@ int main(int argc, char *argv[]) {
 
 
 */
-                        printf("[%d] REPLY aggiungere al gruppo (%d)\n", getpid(), msg_queue.student_mitt);
+                       // printf("[%d] REPLY aggiungere al gruppo (%d)\n", getpid(), msg_queue.student_mitt);
+                        //caso 1.1 : gruppo non esiste e sono entrambi liberi
+                        if (shdata_pointer->students[INDEX].libero &&
+                            shdata_pointer->students[INDEX_MITT].libero &&
+                            shdata_pointer->groups[INDEX].capo != getpid()) {
+
+                            shdata_pointer->students[INDEX].libero = FALSE;
 
 
+                            //creo gruppo e divento capo
+                            shdata_pointer->groups[INDEX].capo = getpid();
+                            shdata_pointer->groups[INDEX].compagni[0] = getpid();
+                            shdata_pointer->groups[INDEX].chiuso = FALSE;
+
+                            //inserisco primo compagni che mi ha risposto
+                            shdata_pointer->groups[INDEX].compagni[1] = msg_queue.student_mitt;
+                            shdata_pointer->students[INDEX_MITT].libero = FALSE;
+
+                            //caso 1.2 : non sono libero e sono capo di un gruppo
+                        } else if (shdata_pointer->groups[INDEX].capo == getpid() &&
+                                   shdata_pointer->groups[INDEX].chiuso == FALSE) {
+
+                            //printf("[%d] sono capo e voglio inserire %d\n", getpid(), msg_queue.student_mitt);
+                            //inserisco studente alla lista compagni
+                            for (int i = 2; i < 4; ++i) {
+                                if (shdata_pointer->groups[INDEX].compagni[i] == 0 &&
+                                    shdata_pointer->students[INDEX_MITT].libero) {
+
+                                 //   printf("[%d] sono capo e voglio inserire %d\n", getpid(), msg_queue.student_mitt);
+
+                                    shdata_pointer->groups[INDEX].compagni[i] = msg_queue.student_mitt;
+                                    shdata_pointer->students[INDEX_MITT].libero = FALSE;
+                                }
+                            }
+
+                            //se il gruppo raggiunge nof_elems imposto a chiuso
+                            if (shdata_pointer->groups[INDEX].compagni[shdata_pointer->students[INDEX].nof_elems - 1] !=
+                                0) {
+                                shdata_pointer->groups[INDEX].chiuso = TRUE;
+                            }
+                        }
+
+                        //caso 1.3 : non sono libero e non sono capo del gruppo -> non fai nulla
                         releaseSem(1);
                         break;
 
@@ -137,16 +161,12 @@ int main(int argc, char *argv[]) {
             msg_queue.oggetto = INVITO;
 
 
-            if (nof_invites > 0 && msg_queue.mtype != -1) {
+            //se ho nof_invites e sono libero invito compagni
+            if (nof_invites > 0 && msg_queue.mtype != -1 && shdata_pointer->students[INDEX].libero == TRUE) {
                 if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0) {
                     TEST_ERROR
                 } else {
-                    reserveSem(1);
-                    // printf("sono[%d] nof_invites (%d) MESSAGGIO INVIATO\n", getpid(), nof_invites);
-
                     nof_invites--;
-                    releaseSem(1);
-
                 }
             }
         }
@@ -274,6 +294,30 @@ int getMsgQueue() {
     }
 }
 
+void accept() {
+
+    toReply_dest = msg_queue.student_mitt;
+    msg_queue.mtype = toReply_dest;
+    msg_queue.student_mitt = getpid();
+    msg_queue.oggetto = REPLY;
+
+    printf("[%d] ACCETTO | to %d | invites %d | index %d\n ", getpid(), toReply_dest,
+           nof_invites, INDEX);
+
+    if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0) {
+        TEST_ERROR
+    }
+}
+
+void refuse() {
+    if (nof_reject > 0) {
+        printf("sono [%d] RIFIUTO %d | reject %d \n", getpid(), msg_queue.student_mitt, nof_reject);
+        nof_reject--;
+    } else {
+        printf("sono [%d] ACCETTO %d PER REJECT TERMINATI\n", getpid(), msg_queue.student_mitt);
+        accept();
+    }
+}
 
 
 

@@ -22,6 +22,7 @@
 #define FALSE 0
 
 #define INDEX getpid()%POP_SIZE
+#define INDEX_MITT msg_queue.student_mitt%POP_SIZE
 
 #define INVITO 1
 #define REPLY 0
@@ -30,7 +31,7 @@
 #define DISPARI getpid()%2!=0
 
 #define POP_SIZE 10
-#define SIM_TIME 5
+#define SIM_TIME 3
 
 #define ID_KEY 'a'
 #define KEY_PARI 2
@@ -108,6 +109,8 @@ int getConfigValue(char line[1]) {
         token = strtok(NULL, line);
     }
 
+    printf("\n value %d\n",value);
+
     return value;
 }
 
@@ -128,6 +131,7 @@ int *read_config() {
     int nof_elems3 = getPercentNof_elems(getConfigValue(nof_elems3_toConvert), POP_SIZE);
     int nof_elems4 = getPercentNof_elems(getConfigValue(nof_elems4_toConvert), POP_SIZE);
 
+    //printf("\n%s |  %d\n",nof_elems2_toConvert,nof_elems2);
 
     int nof_invites = getConfigValue(nof_invites_toConvert);
     int max_reject = getConfigValue(max_reject_toConvert);
@@ -247,3 +251,7 @@ pid_t search_colleagues(int my_nof_elems,int my_voto_AdE,int my_matricola);
 int checkPariDispari(int matricola_to_compare);
 
 int getMsgQueue();
+
+void accept();
+
+void refuse();

@@ -138,6 +138,7 @@ void accept() {
         sh_data->gruppi[indx].chiuso = 1;
         sh_data->info[indx].accettato = 1;
         sh_data->info[pidcapo].accettato = 1;
+
         if (sh_data->gruppi[pidcapo].cont == 0) {
             sh_data->gruppi[pidcapo].compagni[sh_data->gruppi[pidcapo].cont++] = pid;
             sh_data->gruppi[pidcapo].voto = sh_data->info[pidcapo].vote;

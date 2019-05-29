@@ -63,11 +63,12 @@ void signal_handler(int signalVal) {
         printf("\n==== GRUPPI =====\n");
         for (int i = 0; i < POP_SIZE; ++i) {
             if (shdata_pointer->groups[i].capo != 0) {
-                printf("gruppo[%d] capo %d\n", i, shdata_pointer->groups[i].capo);
+                printf("gruppo[%d]\n", i);
                 for (int k = 0; k < 4; ++k) {
                     printf("student %d\n", shdata_pointer->groups[i].compagni[k]);
 
                 }
+                printf("\n");
             }
         }
 
