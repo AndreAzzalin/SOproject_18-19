@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
             sig(1);
             break;
         }
+
+
         msg.mpid = pid;
 
         if (ninvits > 0 && (sh_data->info[indx].accettato == 0 ||

@@ -24,32 +24,41 @@
 #define INDEX getpid()%POP_SIZE
 #define INDEX_MITT msg_queue.student_mitt%POP_SIZE
 
+
+
 #define INVITO 1
 #define REPLY 0
+#define WAIT 2
 
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 10
-#define SIM_TIME 3
+#define POP_SIZE 20
+#define SIM_TIME 5
 
 #define ID_KEY 'a'
 #define KEY_PARI 2
 #define KEY_DISPARI 1
 
+#define SH_INDEX shdata_pointer->students[INDEX]
+#define SH_TO_INVITE shdata_pointer->students[index_POPSIZE]
+#define SH_MITT shdata_pointer->students[INDEX_MITT]
+#define G_INDEX shdata_pointer->groups[INDEX]
+
+
 //variabili personali per ogni studente
-int toReply_dest ;
-int toReply_mitt  ;
-int toReply_type  ;
+int toReply_dest;
+
+int index_POPSIZE;
 
 //==== variabili processi ====
 int status;
 pid_t my_pid;
 
 
-
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
+
 
 //==== variabili strutture ====
 key_t key;
@@ -109,7 +118,7 @@ int getConfigValue(char line[1]) {
         token = strtok(NULL, line);
     }
 
-    printf("\n value %d\n",value);
+    printf("\n value %d\n", value);
 
     return value;
 }
@@ -195,11 +204,23 @@ int initSemAvailable(int semId, int semNum) {
 
 //==== STRUTTURE DATI ====//
 
+
+
+struct msg_util{
+    pid_t pid_invitato;
+    int reply;
+};
+
 struct student {
     pid_t matricola;
     int nof_elems;
     int voto_AdE;
     int libero;
+    int nof_invites_send;
+    int nof_reject;
+
+
+    struct msg_util utils[4];
 };
 
 struct gruppo {
@@ -246,7 +267,7 @@ void start_sim_time();
 
 void setStudentPref();
 
-pid_t search_colleagues(int my_nof_elems,int my_voto_AdE,int my_matricola);
+void search_colleagues(int my_nof_elems, int my_voto_AdE, int my_matricola);
 
 int checkPariDispari(int matricola_to_compare);
 

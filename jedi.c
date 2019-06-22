@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
 
 void signal_handler(int signalVal) {
-    if (signalVal == SIGALRM) {
+    if (signalVal == SIGALRM || signalVal==SIGINT) {
 
         reserveSem(1);
 
@@ -53,24 +53,30 @@ void signal_handler(int signalVal) {
 
             if (child > 0 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 
-                printf("[%d]studente = %d | voto = %d | nof_elems = %d\n", j,
+                printf("[%d] studente = %d | voto = %d | nof_elems = %d\n", j,
                        shdata_pointer->students[j].matricola,
                        shdata_pointer->students[j].voto_AdE,
                        shdata_pointer->students[j].nof_elems);
+
             }
         }
 
         printf("\n==== GRUPPI =====\n");
         for (int i = 0; i < POP_SIZE; ++i) {
+
+            printf("[%d]\n",shdata_pointer->students[i].matricola);
+            for (int k = 0; k < 4; ++k) {
+                printf("invito-> %d risposto %d\n", shdata_pointer->students[i].utils[k].pid_invitato,shdata_pointer->students[i].utils[k].reply);
+
+            }
+
             if (shdata_pointer->groups[i].capo != 0) {
                 printf("gruppo[%d]\n", i);
-                for (int k = 0; k < 4; ++k) {
-                    printf("student %d\n", shdata_pointer->groups[i].compagni[k]);
 
-                }
                 printf("\n");
             }
         }
+
 
         releaseSem(1);
 
