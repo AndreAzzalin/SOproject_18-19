@@ -32,8 +32,9 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 20
-#define SIM_TIME 5
+#define POP_SIZE 500
+#define SIM_TIME 10
+
 
 #define ID_KEY 'a'
 #define KEY_PARI 2
@@ -53,13 +54,10 @@
                             }
 
 //variabili personali per ogni studente
-int toReply_dest;
-
 int index_POPSIZE;
 
 //==== variabili processi ====
 int status;
-pid_t my_pid;
 
 
 struct sigaction sa, sa_old;
@@ -124,7 +122,6 @@ int getConfigValue(char line[1]) {
         token = strtok(NULL, line);
     }
 
-    printf("\n value %d\n", value);
 
     return value;
 }
@@ -141,6 +138,7 @@ int *read_config() {
 
     fscanf(f, "%s %s %s %s %s", nof_elems2_toConvert, nof_elems3_toConvert, nof_elems4_toConvert, nof_invites_toConvert,
            max_reject_toConvert);
+
 
     int nof_elems2 = getPercentNof_elems(getConfigValue(nof_elems2_toConvert), POP_SIZE);
     int nof_elems3 = getPercentNof_elems(getConfigValue(nof_elems3_toConvert), POP_SIZE);
@@ -271,14 +269,7 @@ void signal_handler(int signalVal);
 
 void start_sim_time();
 
-void setStudentPref();
-
-void search_colleagues(int my_nof_elems, int my_voto_AdE, int my_matricola);
-
 int checkPariDispari(int matricola_to_compare);
 
 int getMsgQueue();
 
-void accept();
-
-void refuse();

@@ -14,6 +14,16 @@ int main(int argc, char *argv[]) {
            " - msg_id  = %d\n"
            " - sem_id = %d\n", POP_SIZE, shmem_id, msg_id, sem_id);
 
+    reserveSem(1);
+    printf(" - nof_elem2: %d\n"
+           " - nof_elem3: %d\n "
+           " - nof_elem4: %d\n  "
+           " - nof_invites: %d\n"
+           " - max_reject: %d\n",
+           shdata_pointer->config_values[0], shdata_pointer->config_values[1], shdata_pointer->config_values[2],
+           shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
+    releaseSem(1);
+
 
     for (int i = 0; i < POP_SIZE; i++) {
         if (fork()) {
@@ -65,19 +75,13 @@ void signal_handler(int signalVal) {
         for (int i = 0; i < POP_SIZE; ++i) {
 
 
-            /*   printf("[%d]\n",shdata_pointer->students[i].matricola);
-               for (int k = 0; k < 4; ++k) {
-              //   printf("invito-> %d risposto %d\n", shdata_pointer->students[i].utils[k].pid_invitato,shdata_pointer->students[i].utils[k].reply);
-               }*/
-
-
-
-
             if (shdata_pointer->groups[i].compagni[0] > 0) {
-                printf("gruppo[%d]\n",  shdata_pointer->groups[i].capo);
+                printf("gruppo[%d] chiuso: %d\n", shdata_pointer->groups[i].compagni[0],
+                       shdata_pointer->groups[i].chiuso);
                 for (int j = 0; j < 4; ++j) {
-                    printf("- %d\n", shdata_pointer->groups[i].compagni[j]);
-
+                    if (shdata_pointer->groups[i].compagni[j] > 0) {
+                        printf("- %d\n", shdata_pointer->groups[i].compagni[j]);
+                    }
                 }
             }
 

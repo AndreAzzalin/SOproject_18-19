@@ -3,7 +3,6 @@
 
 int my_nof_elems;
 int my_voto_AdE;
-int my_libero;
 int nof_invites;
 
 int my_msg_queue;
@@ -26,101 +25,6 @@ int main(int argc, char *argv[]) {
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
                    sizeof(msg_queue) - sizeof(long)) {
 
-                /*    switch (msg_queue.oggetto) {
-
-                        case INVITO:
-
-                            reserveSem(1);
-                            int nof_invites_reply = shdata_pointer->students[INDEX].nof_invites_reply;
-                            int nof_invites_send = shdata_pointer->students[INDEX].nof_invites_send;
-                            int io = shdata_pointer->students[INDEX].voto_AdE;
-                            int mitt_voto = shdata_pointer->students[INDEX_MITT].voto_AdE;
-                            int mitt = shdata_pointer->students[INDEX_MITT].matricola;
-                            releaseSem(1);
-
-                            if (nof_invites_reply + nof_invites_send == 4) {
-
-                                if (io <= mitt_voto) {
-                                    //    printf("[%d] ACCETTO [%d]\n", getpid(), mitt);
-                                    accept();
-                                } else {
-                                    reserveSem(1);
-                                    shdata_pointer->students[INDEX_MITT].nof_invites_reply++;
-                                    releaseSem(1);
-                                    refuse();
-                                }
-
-                            } else {
-                                // printf("[%d] RIFIUTO PER REPLY [%d]\n", getpid(), mitt);
-                                reserveSem(1);
-                                shdata_pointer->students[INDEX_MITT].nof_invites_reply++;
-                                releaseSem(1);
-                                break;
-                            }
-
-                            break;
-
-
-                        case REPLY:
-                            reserveSem(1);
-
-                            // printf("[%d] REPLY aggiungere al gruppo (%d)\n", getpid(), msg_queue.student_mitt);
-                            //caso 1.1 : gruppo non esiste e sono entrambi liberi
-                            if (shdata_pointer->students[INDEX].libero == TRUE &&
-                                shdata_pointer->students[INDEX_MITT].libero == TRUE &&
-                                shdata_pointer->groups[INDEX].capo != getpid()) {
-
-
-                                shdata_pointer->students[INDEX].libero = FALSE;
-                                shdata_pointer->students[INDEX_MITT].libero = FALSE;
-
-                                //creo gruppo e divento capo
-                                shdata_pointer->groups[INDEX].capo = getpid();
-                                shdata_pointer->groups[INDEX].chiuso = FALSE;
-
-                                //inserisco primo compagni che mi ha risposto
-                                shdata_pointer->groups[INDEX].compagni[1] = msg_queue.student_mitt;
-                                shdata_pointer->groups[INDEX].compagni[0] = getpid();
-
-                                //printf("[%d] INSERISCO [%d]\n", getpid(), msg_queue.student_mitt);
-
-                                //caso 1.2 : non sono libero e sono capo di un gruppo
-                            } else {
-
-
-                                if (shdata_pointer->groups[INDEX].capo == getpid() &&
-                                    shdata_pointer->students[INDEX].libero == FALSE &&
-                                    shdata_pointer->groups[INDEX].chiuso == FALSE) {
-
-                                    //printf("[%d] sono capo e voglio inserire %d\n", getpid(), msg_queue.student_mitt);
-                                    //inserisco studente alla lista compagni
-                                    for (int i = 2; i < 4; ++i) {
-
-                                        //  printf("[%d] INSERISCO else [%d]\n", getpid(), msg_queue.student_mitt);
-
-                                        if (shdata_pointer->groups[INDEX].compagni[i] == 0 &&
-                                            shdata_pointer->students[INDEX_MITT].libero) {
-
-
-                                            shdata_pointer->groups[INDEX].compagni[i] = msg_queue.student_mitt;
-                                            shdata_pointer->students[INDEX_MITT].libero = FALSE;
-                                        }
-                                    }
-
-                                    //se il gruppo raggiunge nof_elems imposto a chiuso
-                                    if (shdata_pointer->groups[INDEX].compagni[shdata_pointer->students[INDEX].nof_elems -
-                                                                               1] !=
-                                        0) {
-                                        shdata_pointer->groups[INDEX].chiuso = TRUE;
-                                    }
-                                }
-                            }
-                            releaseSem(1);
-
-                            break;
-                    }*/
-
-
 
                 switch (msg_queue.oggetto) {
 
@@ -142,11 +46,10 @@ int main(int argc, char *argv[]) {
                             SH_MITT.libero = FALSE;
 
 
-                            int x = SH_MITT.matricola;
-                            int y = getpid();
+                            int x ;
 
                             G_INDEX.compagni[0] = getpid();
-                            G_INDEX.compagni[1] = x;
+                            G_INDEX.compagni[1] =  SH_MITT.matricola;
 
 
                             SH_INDEX.libero = FALSE;
@@ -167,12 +70,15 @@ int main(int argc, char *argv[]) {
 
                             SH_MITT.libero = FALSE;
 
-                            if (SH_INDEX.nof_elems == 3) {
-                                G_INDEX.compagni[2] = msg_queue.student_mitt;
-                                G_INDEX.chiuso = TRUE;
 
-                            } else if (SH_INDEX.nof_elems == 4) {
-                                G_INDEX.compagni[3] = msg_queue.student_mitt;
+                            for (int i = 0; i < SH_INDEX.nof_elems ; ++i) {
+                                if(G_INDEX.compagni[i] == -1){
+                                    G_INDEX.compagni[i] = msg_queue.student_mitt;
+                                    break;
+                                }
+                            }
+
+                            if(G_INDEX.compagni[SH_INDEX.nof_elems-1]>0){
                                 G_INDEX.chiuso = TRUE;
                             }
 
@@ -286,7 +192,7 @@ int main(int argc, char *argv[]) {
                         msg_queue.student_mitt = getpid();
                         msg_queue.oggetto = INVITO;
 
-                        //printf("[%d] | dest %ld | mitt %d\n", getpid(), msg_queue.mtype, msg_queue.student_mitt);
+
 
                         if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
                             TEST_ERROR
@@ -344,17 +250,17 @@ void init() {
     nof_invites = shdata_pointer->config_values[3];
 
 
-    shdata_pointer->students[INDEX].matricola = getpid();
-    shdata_pointer->students[INDEX].nof_elems = my_nof_elems;
-    shdata_pointer->students[INDEX].voto_AdE = my_voto_AdE;
-    shdata_pointer->students[INDEX].libero = TRUE;
+    SH_INDEX.matricola = getpid();
+    SH_INDEX.nof_elems = my_nof_elems;
+    SH_INDEX.voto_AdE = my_voto_AdE;
+    SH_INDEX.libero = TRUE;
 
-    shdata_pointer->students[INDEX].nof_invites_send = nof_invites;
-    shdata_pointer->students[INDEX].nof_reject = shdata_pointer->config_values[4];
+    SH_INDEX.nof_invites_send = nof_invites;
+    SH_INDEX.nof_reject = shdata_pointer->config_values[4];
 
     for (int i = 0; i < nof_invites; ++i) {
-        shdata_pointer->students[INDEX].utils[i].pid_invitato = -1;
-        shdata_pointer->students[INDEX].utils[i].reply = FALSE;
+        SH_INDEX.utils[i].pid_invitato = -1;
+        SH_INDEX.utils[i].reply = FALSE;
     }
 
     for (int j = 0; j < POP_SIZE; ++j) {
@@ -368,7 +274,7 @@ void init() {
 
     printf("my_nofelems= %d\n", my_nof_elems);
     printf("my_voto= %d\n", my_voto_AdE);
-    printf("my_nof_send= %d\n", shdata_pointer->students[INDEX].nof_invites_send);
+    printf("my_nof_send= %d\n", SH_INDEX.nof_invites_send);
 
 
     reserveSem(0);
@@ -400,40 +306,6 @@ void signal_handler(int signalVal) {
     }
 }
 
-
-void search_colleagues(int my_nof_elems, int my_voto_AdE, int my_matricola) {
-
-    pid_t colleague_found = -1;
-
-    reserveSem(1);
-    for (int i = 0; i < POP_SIZE; ++i) {
-        //se matricola corrisponde al turno corretto e non mi invio msg da solo
-        if (checkPariDispari(shdata_pointer->students[i].matricola)) {
-            if (shdata_pointer->students[i].libero && shdata_pointer->students[i].matricola != getpid()) {
-                //se abbiamo lo stesso nof invia
-                if (shdata_pointer->students[i].nof_elems >= my_nof_elems) {
-                    colleague_found = shdata_pointer->students[i].matricola;
-                    //se ha un voto maggiore o uguale al mio
-                    if (shdata_pointer->students[i].voto_AdE >= my_voto_AdE) {
-                        colleague_found = shdata_pointer->students[i].matricola;
-                        break;
-                    }
-                    break;
-                }
-            } else {
-                //nessuno compatibile
-                colleague_found = -1;
-            }
-        }
-    }
-
-
-    releaseSem(1);
-
-
-}
-
-
 int checkPariDispari(int matricola_to_compare) {
     if ((PARI && matricola_to_compare % 2 == 0) || (DISPARI && matricola_to_compare % 2 != 0)) {
         return TRUE;
@@ -450,38 +322,6 @@ int getMsgQueue() {
     }
 }
 
-void accept() {
 
-    /*
-     * invio messaggio ti tipo accept
-     */
-
-    msg_queue.mtype = msg_queue.student_mitt;
-    msg_queue.student_mitt = getpid();
-    msg_queue.oggetto = REPLY;
-
-
-    if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0) {
-        TEST_ERROR
-    }
-}
-
-void refuse() {
-    reserveSem(1);
-    int nof_reject = shdata_pointer->students[INDEX].nof_reject;
-    releaseSem(1);
-
-    if (nof_reject > 0) {
-        //printf("[%d] RIFIUTO %d | reject %d \n", getpid(), msg_queue.student_mitt, nof_reject);
-
-        reserveSem(1);
-        shdata_pointer->students[INDEX].nof_reject--;
-        releaseSem(1);
-
-    } else {
-        //printf("[%d] ACCETTO %d PER REJECT TERMINATI\n", getpid(), msg_queue.student_mitt);
-        accept();
-    }
-}
 
 
