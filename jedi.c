@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
 
 void signal_handler(int signalVal) {
-    if (signalVal == SIGALRM || signalVal==SIGINT) {
+    if (signalVal == SIGALRM || signalVal == SIGINT) {
 
         reserveSem(1);
 
@@ -64,17 +64,25 @@ void signal_handler(int signalVal) {
         printf("\n==== GRUPPI =====\n");
         for (int i = 0; i < POP_SIZE; ++i) {
 
-            printf("[%d]\n",shdata_pointer->students[i].matricola);
-            for (int k = 0; k < 4; ++k) {
-                printf("invito-> %d risposto %d\n", shdata_pointer->students[i].utils[k].pid_invitato,shdata_pointer->students[i].utils[k].reply);
 
+            /*   printf("[%d]\n",shdata_pointer->students[i].matricola);
+               for (int k = 0; k < 4; ++k) {
+              //   printf("invito-> %d risposto %d\n", shdata_pointer->students[i].utils[k].pid_invitato,shdata_pointer->students[i].utils[k].reply);
+               }*/
+
+
+
+
+            if (shdata_pointer->groups[i].compagni[0] > 0) {
+                printf("gruppo[%d]\n",  shdata_pointer->groups[i].capo);
+                for (int j = 0; j < 4; ++j) {
+                    printf("- %d\n", shdata_pointer->groups[i].compagni[j]);
+
+                }
             }
 
-            if (shdata_pointer->groups[i].capo != 0) {
-                printf("gruppo[%d]\n", i);
+            TEST_ERROR
 
-                printf("\n");
-            }
         }
 
 

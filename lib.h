@@ -25,10 +25,9 @@
 #define INDEX_MITT msg_queue.student_mitt%POP_SIZE
 
 
+#define INVITO 36
+#define REPLY 45
 
-#define INVITO 1
-#define REPLY 0
-#define WAIT 2
 
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
@@ -45,6 +44,13 @@
 #define SH_MITT shdata_pointer->students[INDEX_MITT]
 #define G_INDEX shdata_pointer->groups[INDEX]
 
+
+#define SET_REPLY_TRUE      for (int i = 0; i < 4; ++i) {\
+                                if(SH_MITT.utils[i].pid_invitato == getpid()){\
+                                    SH_MITT.utils[i].reply = TRUE;\
+                                    break;\
+                                }\
+                            }
 
 //variabili personali per ogni studente
 int toReply_dest;
@@ -206,7 +212,7 @@ int initSemAvailable(int semId, int semNum) {
 
 
 
-struct msg_util{
+struct msg_util {
     pid_t pid_invitato;
     int reply;
 };

@@ -120,21 +120,132 @@ int main(int argc, char *argv[]) {
                             break;
                     }*/
 
+
+
                 switch (msg_queue.oggetto) {
+
+
+                    case REPLY:
+                        reserveSem(1);
+
+
+
+                        /*
+                         *  qualcuno ha risposto positivamente a un invito
+                         * è il capo del gruppo a inserire i componenti al prorpio gruppo
+                                            */
+
+
+                        if (SH_INDEX.libero && SH_MITT.libero) {
+
+                            SH_INDEX.libero = FALSE;
+                            SH_MITT.libero = FALSE;
+
+
+                            int x = SH_MITT.matricola;
+                            int y = getpid();
+
+                            G_INDEX.compagni[0] = getpid();
+                            G_INDEX.compagni[1] = x;
+
+
+                            SH_INDEX.libero = FALSE;
+                            SH_MITT.libero = FALSE;
+
+                            // printf("[%d] nof %d chiuso? %d\n",getpid(),SH_INDEX.nof_elems,G_INDEX.chiuso);
+
+                            if (SH_INDEX.nof_elems == 2) {
+                                G_INDEX.chiuso = TRUE;
+                            }
+
+
+                        } else if (G_INDEX.compagni[0] == getpid() && G_INDEX.chiuso == FALSE) {
+                            /*
+                             * sono capo e devo chiudere il gruppo
+                             * rimane caso gruppi formati da 3 o 4 studenti
+                             */
+
+                            SH_MITT.libero = FALSE;
+
+                            if (SH_INDEX.nof_elems == 3) {
+                                G_INDEX.compagni[2] = msg_queue.student_mitt;
+                                G_INDEX.chiuso = TRUE;
+
+                            } else if (SH_INDEX.nof_elems == 4) {
+                                G_INDEX.compagni[3] = msg_queue.student_mitt;
+                                G_INDEX.chiuso = TRUE;
+                            }
+
+                        }
+
+
+                        releaseSem(1);
+
+                        break;
+
+
                     case INVITO:
-                        printf("[%d] ricevuto invito %d\n", getpid(), msg_queue.student_mitt);
 
+                        reserveSem(1);
 
-                        for (int i = 0; i < 4; ++i) {
-                            if(SH_MITT.utils[i].pid_invitato == getpid()){
-                                SH_MITT.utils[i].reply = TRUE;
+                        /*
+                         * se non ho ricevuto tutte le risposte invio un WAIT
+                         * se ricevo un wait è come se rifiutassi ma senza reject--
+                         *
+                         */
+
+                        int flag_wait = 0;
+                        for (int j = 0; j < nof_invites; ++j) {
+                            if (SH_INDEX.utils[j].pid_invitato > 0 && SH_INDEX.utils[j].reply == FALSE) {
+                                flag_wait = -1;
                                 break;
                             }
                         }
 
+
+                        if (flag_wait < 0) {
+                            /*
+                             * se non ho ricevuto risposta da tutti invio un wait al mittente
+                             */
+                            SET_REPLY_TRUE
+
+                        } else if (((SH_INDEX.voto_AdE - SH_MITT.voto_AdE) < 5 && SH_INDEX.libero) ||
+                                   SH_INDEX.nof_reject < 0) {
+                            /*
+                             * accetta se compatibile o se ha finito i reject
+                             * viene impostato il mitta true
+                             * viene inserito nel gruppo
+                             * se è il primo
+                             */
+                            SET_REPLY_TRUE
+
+                            msg_queue.mtype = msg_queue.student_mitt;
+                            msg_queue.student_mitt = getpid();
+                            msg_queue.oggetto = REPLY;
+
+                            if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
+                                TEST_ERROR
+
+
+                        } else {
+                            /*
+                             * rifiuto per incompatibilità
+                             */
+                            SET_REPLY_TRUE
+                            SH_INDEX.nof_reject--;
+
+                        }
+
+                        releaseSem(1);
+
+                        break;
                 }
             }
 
+
+            /*
+             * sezione invio msg
+             */
 
             reserveSem(1);
 
@@ -143,38 +254,42 @@ int main(int argc, char *argv[]) {
              * se sono libero
              * se sono capo e non ho ancora chiuso il gruppo
              */
-            if (SH_INDEX.nof_invites_send > 0 && SH_INDEX.libero ||
+            if ((SH_INDEX.nof_invites_send > 0 && SH_INDEX.libero) ||
                 (G_INDEX.capo == getpid() && G_INDEX.chiuso == FALSE)) {
 
                 //cerco studenti compatibili
                 if (checkPariDispari(SH_TO_INVITE.matricola) && (SH_INDEX.matricola != SH_TO_INVITE.matricola) &&
                     (SH_INDEX.voto_AdE <= SH_TO_INVITE.voto_AdE) &&
-                    (SH_INDEX.nof_elems == SH_TO_INVITE.nof_elems)) {
+                    (SH_INDEX.nof_elems == SH_TO_INVITE.nof_elems) && SH_TO_INVITE.libero) {
+
 
                     //controllo a quali studenti ho giù chiesto
-                    int flag = TRUE;
+                    int flag_no_spam = TRUE;
                     for (int i = 0; i < 4; ++i) {
                         if (SH_INDEX.utils[i].pid_invitato == SH_TO_INVITE.matricola) {
-                            flag = FALSE;
+                            flag_no_spam = FALSE;
                         }
                     }
 
                     /*
                      * se non ho mai invitato aggiungo alla lista di invitati
                      */
-                    if (flag) {
+                    if (flag_no_spam) {
+
                         SH_INDEX.utils[SH_INDEX.nof_invites_send - 1].pid_invitato = SH_TO_INVITE.matricola;
                         SH_INDEX.utils[SH_INDEX.nof_invites_send - 1].reply = FALSE;
+
+                        SH_INDEX.nof_invites_send--;
 
 
                         msg_queue.mtype = SH_TO_INVITE.matricola;
                         msg_queue.student_mitt = getpid();
                         msg_queue.oggetto = INVITO;
 
+                        //printf("[%d] | dest %ld | mitt %d\n", getpid(), msg_queue.mtype, msg_queue.student_mitt);
+
                         if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
                             TEST_ERROR
-
-                        SH_INDEX.nof_invites_send--;
                     }
                 }
             }
@@ -238,8 +353,16 @@ void init() {
     shdata_pointer->students[INDEX].nof_reject = shdata_pointer->config_values[4];
 
     for (int i = 0; i < nof_invites; ++i) {
-        shdata_pointer->students[INDEX].utils[i].pid_invitato = 0;
+        shdata_pointer->students[INDEX].utils[i].pid_invitato = -1;
         shdata_pointer->students[INDEX].utils[i].reply = FALSE;
+    }
+
+    for (int j = 0; j < POP_SIZE; ++j) {
+        G_INDEX.capo = -1;
+        G_INDEX.chiuso = FALSE;
+        for (int i = 0; i < 4; ++i) {
+            G_INDEX.compagni[i] = -1;
+        }
     }
 
 
@@ -329,15 +452,14 @@ int getMsgQueue() {
 
 void accept() {
 
-    toReply_dest = msg_queue.student_mitt;
-    msg_queue.mtype = toReply_dest;
+    /*
+     * invio messaggio ti tipo accept
+     */
+
+    msg_queue.mtype = msg_queue.student_mitt;
     msg_queue.student_mitt = getpid();
     msg_queue.oggetto = REPLY;
 
-    reserveSem(1);
-    /* printf("[%d] ACCETTO [%d] | invites %d\n ", getpid(), toReply_dest,
-            shdata_pointer->students[INDEX].nof_invites_send);*/
-    releaseSem(1);
 
     if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0) {
         TEST_ERROR
