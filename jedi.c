@@ -1,12 +1,35 @@
 #include "lib.h"
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
 
 
 int main(int argc, char *argv[]) {
 
     printf("==== PADRE[%d] STARTING SIMULATION ====\n", getpid());
+
+    printf(ANSI_COLOR_RED     "This text is RED!"    ANSI_COLOR_RESET "\n");
     init();
     TEST_ERROR
 
+printf("\n"
+       "/***\n"
+       " *    ______                     _   _          _____  _____   \n"
+       " *    | ___ \\                   | | | |        /  ___||  _  |  \n"
+       " *    | |_/ / __ ___   __ _  ___| |_| |_ ___   \\ `--. | | | |  \n"
+       " *    |  __/ '__/ _ \\ / _` |/ _ \\ __| __/ _ \\   `--. \\| | | |  \n"
+       " *    | |  | | | (_) | (_| |  __/ |_| || (_) | /\\__/ /\\ \\_/ /  \n"
+       " *    \\_|  |_|  \\___/ \\__, |\\___|\\__|\\__\\___/  \\____/  \\___/   \n"
+       " *                     __/ |                                   \n"
+       " *                    |___/                                    \n"
+       " *     _____  _____  __   _____     _______  _____  __   _____ \n"
+       " *    / __  \\|  _  |/  | |  _  |   / / __  \\|  _  |/  | |  _  |\n"
+       " *    `' / /'| |/' |`| |  \\ V /   / /`' / /'| |/' |`| | | |_| |\n"
+       " *      / /  |  /| | | |  / _ \\  / /   / /  |  /| | | | \\____ |\n"
+       " *    ./ /___\\ |_/ /_| |_| |_| |/ /  ./ /___\\ |_/ /_| |_.___/ /\n"
+       " *    \\_____/ \\___/ \\___/\\_____/_/   \\_____/ \\___/ \\___/\\____/ \n"
+       " *                                                             \n"
+       " *                                                             \n"
+       " */");
 
     printf("==== END INITIALIZATION ====\n"
            " \n - Nof_Students = %d\n"
@@ -70,13 +93,15 @@ void signal_handler(int signalVal) {
 
             if (child > 0 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
                 f = fopen("file.txt", "a");
-                 fprintf(f,"[%d] studente = %d | voto = %d | nof_elems = %d | lib %d | nof_invites %d\n", j,
-                            shdata_pointer->students[j].matricola,
-                            shdata_pointer->students[j].voto_AdE,
-                            shdata_pointer->students[j].nof_elems, shdata_pointer->students[j].libero,  shdata_pointer->students[j].nof_invites_send);
+                fprintf(f, "[%d] studente = %d | voto = %d | nof_elems = %d | lib %d | nof_invites %d\n", j,
+                        shdata_pointer->students[j].matricola,
+                        shdata_pointer->students[j].voto_AdE,
+                        shdata_pointer->students[j].nof_elems, shdata_pointer->students[j].libero,
+                        shdata_pointer->students[j].nof_invites_send);
 
                 for (int k = 0; k < 4; ++k) {
-                    fprintf(f ,"- %d \n", shdata_pointer->students[j].utils[k].pid_invitato);
+                    fprintf(f, "- %d | %d \n", shdata_pointer->students[j].utils[k].pid_invitato,
+                            shdata_pointer->students[j].utils[k].reply);
                 }
 
                 fclose(f);
@@ -107,23 +132,25 @@ void signal_handler(int signalVal) {
                        shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send, shdata_pointer->groups[i].chiuso,
                        shdata_pointer->students[pidCapo % POP_SIZE].matricola);
 
-                fprintf( f, "gruppo[%d] n_elems %d n_invites_send %d | closed: %d | test %d \n",
-                       shdata_pointer->groups[i].compagni[0],
-                       shdata_pointer->students[pidCapo % POP_SIZE].nof_elems,
-                       shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send, shdata_pointer->groups[i].chiuso,
-                       shdata_pointer->students[pidCapo % POP_SIZE].matricola);
+                fprintf(f, "gruppo[%d] n_elems %d n_invites_send %d | closed: %d | test %d \n",
+                        shdata_pointer->groups[i].compagni[0],
+                        shdata_pointer->students[pidCapo % POP_SIZE].nof_elems,
+                        shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send, shdata_pointer->groups[i].chiuso,
+                        shdata_pointer->students[pidCapo % POP_SIZE].matricola);
 
+                for (int j = 0; j < 4; ++j) {
+                    if (shdata_pointer->groups[i].compagni[j] > 0) {
+                        fprintf(f, "- %d\n", shdata_pointer->groups[i].compagni[j]);
+                    }
+                }
 
 
                 fclose(f);
 
 
 
-
-                printf("------ compari ----\n");
-
                 for (int j = 0; j < 4; ++j) {
-                    if (shdata_pointer->groups[i].compagni[j] > 0) {
+                    if (shdata_pointer->groups[i].compagni[j] > 0 &&shdata_pointer->groups[i].chiuso ) {
                         printf("- %d\n", shdata_pointer->groups[i].compagni[j]);
                     }
                 }
@@ -149,8 +176,6 @@ void signal_handler(int signalVal) {
 }
 
 void init() {
-
-
 
 
     key = setKey();

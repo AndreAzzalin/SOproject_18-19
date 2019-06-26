@@ -45,6 +45,8 @@
 #define SH_MITT shdata_pointer->students[INDEX_MITT]
 #define G_INDEX shdata_pointer->groups[INDEX]
 
+#define G_MITT_INDEX shdata_pointer->groups[INDEX_MITT]
+
 
 #define SET_REPLY_TRUE      for (int i = 0; i < 4; ++i) {\
                                 if(SH_MITT.utils[i].pid_invitato == getpid()){\
@@ -230,7 +232,6 @@ struct student {
 };
 
 struct gruppo {
-    pid_t capo;
     pid_t compagni[4];
     int chiuso;
     int voto;
