@@ -6,13 +6,7 @@
 
 int main(int argc, char *argv[]) {
 
-    printf("==== PADRE[%d] STARTING SIMULATION ====\n", getpid());
-
-    printf(ANSI_COLOR_RED     "This text is RED!"    ANSI_COLOR_RESET "\n");
-    init();
-    TEST_ERROR
-
-    printf("\n"
+    printf(ANSI_COLOR_GREEN "\n"
            "/***\n"
            " *    ______                     _   _          _____  _____   \n"
            " *    | ___ \\                   | | | |        /  ___||  _  |  \n"
@@ -30,21 +24,33 @@ int main(int argc, char *argv[]) {
            " *    \\_____/ \\___/ \\___/\\_____/_/   \\_____/ \\___/ \\___/\\____/ \n"
            " *                                                             \n"
            " *                                                             \n"
-           " */");
+           " */\n" ANSI_COLOR_RESET);
 
-    printf("==== END INITIALIZATION ====\n"
-           " \n - Nof_Students = %d\n"
+    printf(ANSI_COLOR_RED "=============== PADRE[%d] STARTING SIMULATION ===============\n" ANSI_COLOR_RESET,
+           getpid());
+
+
+    init();
+    TEST_ERROR
+
+
+    printf(ANSI_COLOR_GREEN"\n================== INITIALIZATION  COMPLETE ====================\n"ANSI_COLOR_RESET
+           ANSI_COLOR_YELLOW "\n ======= ID IPC ======= \n" ANSI_COLOR_RESET
            " - sh_id  = %d\n"
-           " - msg_id  = %d\n"
-           " - sem_id = %d\n", POP_SIZE, shmem_id, msg_id, sem_id);
+           " - msg_pari = %d\n"
+           " - msg_dispari = %d\n"
+           " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
 
     reserveSem(1);
-    printf(" - nof_elem2: %d\n"
-           " - nof_elem3: %d\n "
-           " - nof_elem4: %d\n  "
+    printf(ANSI_COLOR_YELLOW "\n ===== CONFIG VAR ===== \n" ANSI_COLOR_RESET
+           " - Nof_Students = %d\n"
+           " - nof_elem2: %d\n"
+           " - nof_elem3: %d\n"
+           " - nof_elem4: %d\n"
            " - nof_invites: %d\n"
            " - max_reject: %d\n",
-           shdata_pointer->config_values[0], shdata_pointer->config_values[1], shdata_pointer->config_values[2],
+           POP_SIZE, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
+           shdata_pointer->config_values[2],
            shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
     releaseSem(1);
 
@@ -61,6 +67,8 @@ int main(int argc, char *argv[]) {
     }
 
 
+
+
     //padre attende che tutti i figli terminino prima di terminare
     for (int i = 0; i < POP_SIZE; ++i) {
         wait(&status);
@@ -68,6 +76,8 @@ int main(int argc, char *argv[]) {
 
 
     exit(EXIT_SUCCESS);
+
+
 }
 
 
@@ -76,13 +86,9 @@ void signal_handler(int signalVal) {
 
         reserveSem(1);
 
-        /*
-         * assegno voti
-         */
 
-
-
-        printf("\n==== PADRE[%d] SIGALRM =====\n", getpid());
+        printf(ANSI_COLOR_RED "\n==================== PADRE[%d] SIGALRM =====================\n" ANSI_COLOR_RESET,
+               getpid());
         for (int j = 0; j < POP_SIZE; ++j) {
 
             //invio segnale di terminazione ai figli
@@ -116,14 +122,7 @@ void signal_handler(int signalVal) {
         printf("\n==== GRUPPI =====\n");
         for (int i = 0; i < POP_SIZE; ++i) {
 
-            if (shdata_pointer->students[i].libero) {
-                // printf("[%d] sono ancora free\n",shdata_pointer->students[i].matricola);
-            }
-
-
             int voto_max = 0;
-
-            //shdata_pointer->groups[i].compagni[0] > 0
             if (shdata_pointer->groups[i].compagni[0] > 0 && shdata_pointer->groups[i].chiuso) {
 
                 int pidCapo = shdata_pointer->groups[i].compagni[0];
@@ -192,14 +191,14 @@ void signal_handler(int signalVal) {
         releaseSem(1);
 
 
-        printf("\n==== PULIZIA COMPLETATA ====\n"
-               "semctl = %d\n"
-               "shmctrl = %d\n"
-               "smgctrl = %d %d", semctl(sem_id, 2, IPC_RMID), shmctl(shmem_id, IPC_RMID, NULL),
-               msgctl(msg_pari, IPC_RMID, NULL), msgctl(msg_dispari, IPC_RMID, NULL));
 
+        if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(shmem_id, IPC_RMID, NULL)) {
+            printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
+        } else {
+            TEST_ERROR
+        }
 
-        printf("\n==== END SIMULATION ====\n");
+        printf(ANSI_COLOR_RED "\n====================== END SIMULATION ======================\n" ANSI_COLOR_RESET);
 
         exit(EXIT_SUCCESS);
     }
@@ -246,6 +245,8 @@ void init() {
     TEST_ERROR
 
     start_sim_time();
+
+
 }
 
 void start_sim_time() {

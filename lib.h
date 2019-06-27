@@ -25,8 +25,14 @@
 #define INDEX_MITT msg_queue.student_mitt%POP_SIZE
 
 
-#define INVITO 36
-#define REPLY 45
+/*--- colors ---*/
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
 
 
 #define PARI getpid()%2==0
@@ -66,6 +72,7 @@ FILE *f;
 
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
+struct shdata *shdata_pointer;
 
 
 //==== variabili strutture ====
@@ -83,9 +90,7 @@ char *arg_null[] = { NULL};
 struct my_msg {
     long mtype;
     pid_t student_mitt;
-    int oggetto;
-
-};
+ };
 
 
 union semun {
@@ -236,7 +241,6 @@ struct student {
 struct gruppo {
     pid_t compagni[4];
     int chiuso;
-    int voto;
 };
 
 struct shdata {
@@ -245,7 +249,7 @@ struct shdata {
     int config_values[5];
 };
 
-struct shdata *shdata_pointer;
+
 
 
 //==== COMMON ====//
@@ -277,5 +281,7 @@ void start_sim_time();
 int checkPariDispari(int matricola_to_compare);
 
 int getMsgQueue();
+
+
 
 

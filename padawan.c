@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
         if (getSemVal(0) == 0) {
 
 
-            //prima rispondo a tutti e poi invio msg
+            //se nella coda di messaggi ci sono msg con mtype = al mio pid, leggo il messaggio
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
                    sizeof(msg_queue) - sizeof(long)) {
 
@@ -52,8 +52,6 @@ int main(int argc, char *argv[]) {
                     /*
                      * se non ho ricevuto risposta da tutti invio un wait al mittente
                      */
-
-                    //  SET_REPLY_TRUE
 
                     for (int i = 0; i < 4; ++i) {
                         if (SH_MITT.utils[i].pid_invitato == getpid()) {
@@ -239,7 +237,6 @@ int main(int argc, char *argv[]) {
 
                         msg_queue.mtype = SH_TO_INVITE.matricola;
                         msg_queue.student_mitt = getpid();
-                        msg_queue.oggetto = INVITO;
 
 
                         if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
@@ -281,17 +278,14 @@ void init() {
 
     //mi allaccio alle strutture IPC
     key = setKey();
-    sem_id = semget(key, 0, IPC_CREAT);
-
+   // sem_id = semget(key, 0, IPC_CREAT);
+    sem_id = semget(key, 2, IPC_CREAT| 0666);
     shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
     shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
 
-
-    //  msg_id = msgget(ID_KEY, IPC_CREAT | 0666);
-
     my_msg_queue = getMsgQueue();
 
-    sem_id = semget(key, 2, IPC_CREAT | 0666);
+
 
     TEST_ERROR
 
@@ -350,13 +344,6 @@ void init() {
 
 void signal_handler(int signalVal) {
     if (signalVal == SIGINT) {
-
-
-        //se sono capo chiudo il mio gruppo
-        if (G_INDEX.compagni[0] == getpid()) {
-            // G_INDEX.chiuso = TRUE;
-        }
-
 
 
         //stacco frammento di memoria da processo
