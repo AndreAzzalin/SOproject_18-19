@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
                 for (int j = 0; j < nof_invites; ++j) {
                     if (SH_INDEX.utils[j].pid_invitato > 0 && SH_INDEX.utils[j].reply == FALSE) {
-                        flag_wait = -1;
+                        flag_wait = 1;
                         break;
                     }
                 }
@@ -46,20 +46,30 @@ int main(int argc, char *argv[]) {
                 if (flag_wait < 0) {
 
                     f = fopen("file.txt", "a");
-                    fprintf(f, "[%d] WAIT O NON LIBERO %d\n", getpid(), SH_MITT.matricola);
+                    fprintf(f, "[%d] INVIO WAIT -> %d\n", getpid(), SH_MITT.matricola);
                     fclose(f);
 
                     /*
                      * se non ho ricevuto risposta da tutti invio un wait al mittente
-                     * però tolgo il pid dalla lista
                      */
 
-                    /*  */
+                    //  SET_REPLY_TRUE
 
-                    SET_REPLY_TRUE
+                    for (int i = 0; i < 4; ++i) {
+                        if (SH_MITT.utils[i].pid_invitato == getpid()) {
+                            SH_MITT.utils[i].pid_invitato = -1;
+                            SH_MITT.utils[i].reply = FALSE;
+                            break;
+                        }
+                    }
 
 
-                } else if (SH_INDEX.libero == FALSE) {
+                    if (SH_MITT.nof_invites_send != nof_invites) {
+                        SH_MITT.nof_invites_send++;
+                    }
+
+
+                } else if (!SH_INDEX.libero) {
 
                     /*
                      * se per qualche motivo non sono più libero toglimi dalla lista
@@ -74,20 +84,21 @@ int main(int argc, char *argv[]) {
                     }
 
 
-                    if (SH_MITT.nof_invites_send < nof_invites) {
+                    if (SH_MITT.nof_invites_send != nof_invites) {
                         SH_MITT.nof_invites_send++;
                     }
 
 
                 } else if ((SH_INDEX.libero && (SH_INDEX.voto_AdE - SH_MITT.voto_AdE < 5 ||
                                                 SH_MITT.voto_AdE - SH_INDEX.voto_AdE > -5)) ||
+
                            (SH_INDEX.nof_reject <= 0 && SH_INDEX.libero)) {
                     /*
                      * accetta se compatibile o se ha finito i reject
-                                     * viene impostato il mitta true
-                                       * viene inserito nel gruppo
-                                       * se è il primo
-                                       */
+                     * viene impostato il mitta true
+                     * viene inserito nel gruppo
+                     * se è il primo
+                     */
 
 
                     SET_REPLY_TRUE
@@ -112,7 +123,6 @@ int main(int argc, char *argv[]) {
                         G_MITT_INDEX.compagni[0] = SH_MITT.matricola;
                         G_MITT_INDEX.compagni[1] = getpid();
 
-                        // printf("[%d] nof %d chiuso? %d\n",getpid(),SH_INDEX.nof_elems,G_INDEX.chiuso);
 
                         if (SH_MITT.nof_elems == 2) {
                             G_MITT_INDEX.chiuso = TRUE;
@@ -132,6 +142,7 @@ int main(int argc, char *argv[]) {
                          * sono capo e devo chiudere il gruppo
                          * rimane caso gruppi formati da 3 o 4 studenti
                          */
+
 
                         SH_MITT.libero = FALSE;
                         SH_INDEX.libero = FALSE;
@@ -155,6 +166,7 @@ int main(int argc, char *argv[]) {
                     /*
                      * rifiuto per incompatibilità
                      */
+
                     f = fopen("file.txt", "a");
                     fprintf(f, "[%d] rifiuto -> [%d] reject %d\n", getpid(), SH_MITT.matricola,
                             SH_INDEX.nof_reject);
@@ -221,10 +233,7 @@ int main(int argc, char *argv[]) {
                             }
                         }
 
-                        /*  SH_INDEX.utils[SH_INDEX.nof_invites_send - 1].pid_invitato = SH_TO_INVITE.matricola;
-                          SH_INDEX.utils[SH_INDEX.nof_invites_send - 1].reply = FALSE;*/
 
-                        // printf("[%d] nof -> %d mitt->%d\n", getpid(), SH_INDEX.nof_invites_send--,SH_TO_INVITE.matricola);
                         SH_INDEX.nof_invites_send--;
 
 
@@ -237,7 +246,8 @@ int main(int argc, char *argv[]) {
                             TEST_ERROR
                     }
                 }
-            } else if (SH_INDEX.libero && SH_INDEX.nof_invites_send <= 0) {
+
+            } else if (SH_INDEX.libero && SH_INDEX.nof_invites_send <= 0 && SH_INDEX.nof_reject <= 0) {
                 /*
                  * se ho finito gli inviti, non sono ancora in nessnu gruppo
                  * e ho un voto compreso tra 27 e 30 mi creo un gruppo da solo
@@ -250,14 +260,13 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-            releaseSem(1);
 
             index_POPSIZE++;
 
             if (index_POPSIZE == POP_SIZE) {
                 index_POPSIZE = 0;
             }
-
+            releaseSem(1);
         }
     }
 
@@ -303,7 +312,9 @@ void init() {
     SH_INDEX.matricola = getpid();
     SH_INDEX.nof_elems = my_nof_elems;
     SH_INDEX.voto_AdE = my_voto_AdE;
+    SH_INDEX.voto_SO = 0;
     SH_INDEX.libero = TRUE;
+
 
     SH_INDEX.nof_invites_send = nof_invites;
     SH_INDEX.nof_reject = shdata_pointer->config_values[4];
@@ -353,9 +364,7 @@ void signal_handler(int signalVal) {
 
         msgctl(my_msg_queue, IPC_RMID, NULL);
 
-        //  msgctl(msg_id, IPC_RMID, NULL);
-
-        //  shmctl(shmem_id, IPC_RMID, NULL);
+        shmctl(shmem_id, IPC_RMID, NULL);
 
 
         exit(EXIT_SUCCESS);

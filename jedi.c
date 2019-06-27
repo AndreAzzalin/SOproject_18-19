@@ -1,4 +1,5 @@
 #include "lib.h"
+
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
@@ -11,25 +12,25 @@ int main(int argc, char *argv[]) {
     init();
     TEST_ERROR
 
-printf("\n"
-       "/***\n"
-       " *    ______                     _   _          _____  _____   \n"
-       " *    | ___ \\                   | | | |        /  ___||  _  |  \n"
-       " *    | |_/ / __ ___   __ _  ___| |_| |_ ___   \\ `--. | | | |  \n"
-       " *    |  __/ '__/ _ \\ / _` |/ _ \\ __| __/ _ \\   `--. \\| | | |  \n"
-       " *    | |  | | | (_) | (_| |  __/ |_| || (_) | /\\__/ /\\ \\_/ /  \n"
-       " *    \\_|  |_|  \\___/ \\__, |\\___|\\__|\\__\\___/  \\____/  \\___/   \n"
-       " *                     __/ |                                   \n"
-       " *                    |___/                                    \n"
-       " *     _____  _____  __   _____     _______  _____  __   _____ \n"
-       " *    / __  \\|  _  |/  | |  _  |   / / __  \\|  _  |/  | |  _  |\n"
-       " *    `' / /'| |/' |`| |  \\ V /   / /`' / /'| |/' |`| | | |_| |\n"
-       " *      / /  |  /| | | |  / _ \\  / /   / /  |  /| | | | \\____ |\n"
-       " *    ./ /___\\ |_/ /_| |_| |_| |/ /  ./ /___\\ |_/ /_| |_.___/ /\n"
-       " *    \\_____/ \\___/ \\___/\\_____/_/   \\_____/ \\___/ \\___/\\____/ \n"
-       " *                                                             \n"
-       " *                                                             \n"
-       " */");
+    printf("\n"
+           "/***\n"
+           " *    ______                     _   _          _____  _____   \n"
+           " *    | ___ \\                   | | | |        /  ___||  _  |  \n"
+           " *    | |_/ / __ ___   __ _  ___| |_| |_ ___   \\ `--. | | | |  \n"
+           " *    |  __/ '__/ _ \\ / _` |/ _ \\ __| __/ _ \\   `--. \\| | | |  \n"
+           " *    | |  | | | (_) | (_| |  __/ |_| || (_) | /\\__/ /\\ \\_/ /  \n"
+           " *    \\_|  |_|  \\___/ \\__, |\\___|\\__|\\__\\___/  \\____/  \\___/   \n"
+           " *                     __/ |                                   \n"
+           " *                    |___/                                    \n"
+           " *     _____  _____  __   _____     _______  _____  __   _____ \n"
+           " *    / __  \\|  _  |/  | |  _  |   / / __  \\|  _  |/  | |  _  |\n"
+           " *    `' / /'| |/' |`| |  \\ V /   / /`' / /'| |/' |`| | | |_| |\n"
+           " *      / /  |  /| | | |  / _ \\  / /   / /  |  /| | | | \\____ |\n"
+           " *    ./ /___\\ |_/ /_| |_| |_| |/ /  ./ /___\\ |_/ /_| |_.___/ /\n"
+           " *    \\_____/ \\___/ \\___/\\_____/_/   \\_____/ \\___/ \\___/\\____/ \n"
+           " *                                                             \n"
+           " *                                                             \n"
+           " */");
 
     printf("==== END INITIALIZATION ====\n"
            " \n - Nof_Students = %d\n"
@@ -54,7 +55,7 @@ printf("\n"
                 TEST_ERROR;
                 break;
             case 0:
-                execve("padawan", NULL, NULL);
+                execve("padawan", arg_null, arg_null);
                 break;
         }
     }
@@ -120,8 +121,10 @@ void signal_handler(int signalVal) {
             }
 
 
+            int voto_max = 0;
+
             //shdata_pointer->groups[i].compagni[0] > 0
-            if (shdata_pointer->groups[i].compagni[0] > 0) {
+            if (shdata_pointer->groups[i].compagni[0] > 0 && shdata_pointer->groups[i].chiuso) {
 
                 int pidCapo = shdata_pointer->groups[i].compagni[0];
 
@@ -138,9 +141,25 @@ void signal_handler(int signalVal) {
                         shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send, shdata_pointer->groups[i].chiuso,
                         shdata_pointer->students[pidCapo % POP_SIZE].matricola);
 
+
                 for (int j = 0; j < 4; ++j) {
+
                     if (shdata_pointer->groups[i].compagni[j] > 0) {
-                        fprintf(f, "- %d\n", shdata_pointer->groups[i].compagni[j]);
+
+                        int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
+
+                        fprintf(f, "- %d | %d\n", shdata_pointer->students[x].matricola,
+                                shdata_pointer->students[x].voto_AdE);
+
+
+                        for (int k = 0; k < shdata_pointer->students[pidCapo % POP_SIZE].nof_elems; ++k) {
+                            if (voto_max < shdata_pointer->students[x].voto_AdE) {
+                                voto_max = shdata_pointer->students[x].voto_AdE;
+                            }
+
+                            shdata_pointer->students[x].voto_SO = voto_max;
+
+                        }
                     }
                 }
 
@@ -148,16 +167,27 @@ void signal_handler(int signalVal) {
                 fclose(f);
 
 
-
                 for (int j = 0; j < 4; ++j) {
-                    if (shdata_pointer->groups[i].compagni[j] > 0 &&shdata_pointer->groups[i].chiuso ) {
-                        printf("- %d\n", shdata_pointer->groups[i].compagni[j]);
+                    if (shdata_pointer->groups[i].compagni[j] > 0 && shdata_pointer->groups[i].chiuso) {
+                        int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
+                        printf("- %d | %d\n", shdata_pointer->students[x].matricola,
+                               shdata_pointer->students[x].voto_AdE);
                     }
                 }
                 printf("\n");
             }
         }
 
+
+        for (int l = 0; l < POP_SIZE; ++l) {
+            f = fopen("file.txt", "a");
+            fprintf(f, "[%d]  voto_ade = %d | lib %d | voto_so %d | noof_inv %d | reject %d\n",
+                    shdata_pointer->students[l].matricola,
+                    shdata_pointer->students[l].voto_AdE,
+                    shdata_pointer->students[l].libero, shdata_pointer->students[l].voto_SO,
+                    shdata_pointer->students[l].nof_invites_send, shdata_pointer->students[l].nof_reject);
+            fclose(f);
+        }
 
         releaseSem(1);
 
@@ -227,5 +257,7 @@ void start_sim_time() {
 
     releaseSem(1);
 }
+
+
 
 

@@ -77,6 +77,7 @@ int msg_pari;
 int msg_dispari;
 
 int indx;
+char *arg_null[] = { NULL};
 
 
 struct my_msg {
@@ -226,6 +227,7 @@ struct student {
     int libero;
     int nof_invites_send;
     int nof_reject;
+    int voto_SO;
 
 
     struct msg_util utils[4];
@@ -275,4 +277,5 @@ void start_sim_time();
 int checkPariDispari(int matricola_to_compare);
 
 int getMsgQueue();
+
 
