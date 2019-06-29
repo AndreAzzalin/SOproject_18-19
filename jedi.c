@@ -34,15 +34,15 @@ int main(int argc, char *argv[]) {
     TEST_ERROR
 
 
-    printf(ANSI_COLOR_GREEN"\n================== INITIALIZATION  COMPLETE ====================\n"ANSI_COLOR_RESET
-           ANSI_COLOR_YELLOW "\n ======= ID IPC ======= \n" ANSI_COLOR_RESET
+    printf(ANSI_COLOR_YELLOW"\n================== INITIALIZATION  COMPLETE ====================\n"ANSI_COLOR_RESET
+           ANSI_COLOR_BLUE "\n ======= ID IPC ======= \n" ANSI_COLOR_RESET
            " - sh_id  = %d\n"
            " - msg_pari = %d\n"
            " - msg_dispari = %d\n"
            " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
 
     reserveSem(1);
-    printf(ANSI_COLOR_YELLOW "\n ===== CONFIG VAR ===== \n" ANSI_COLOR_RESET
+    printf(ANSI_COLOR_BLUE "\n ===== CONFIG VAR ===== \n" ANSI_COLOR_RESET
            " - Nof_Students = %d\n"
            " - nof_elem2: %d\n"
            " - nof_elem3: %d\n"
@@ -66,8 +66,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
-
+    printf(ANSI_COLOR_YELLOW"\n=========================== LOADING... ========================\n"ANSI_COLOR_RESET);
 
     //padre attende che tutti i figli terminino prima di terminare
     for (int i = 0; i < POP_SIZE; ++i) {
@@ -76,8 +75,6 @@ int main(int argc, char *argv[]) {
 
 
     exit(EXIT_SUCCESS);
-
-
 }
 
 
@@ -86,41 +83,19 @@ void signal_handler(int signalVal) {
 
         reserveSem(1);
 
+        //blocco l'attività di tutti i processi figli
+        releaseSem(0);
+
 
         printf(ANSI_COLOR_RED "\n==================== PADRE[%d] SIGALRM =====================\n" ANSI_COLOR_RESET,
                getpid());
-        for (int j = 0; j < POP_SIZE; ++j) {
-
-            //invio segnale di terminazione ai figli
-            kill(shdata_pointer->students[j].matricola, SIGINT);
-
-            //aspetto che il figlio gestisca il segnale
-            pid_t child = wait(&status);
 
 
-            if (child > 0 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-                f = fopen("file.txt", "a");
-                fprintf(f, "[%d] studente = %d | voto = %d | nof_elems = %d | lib %d | nof_invites %d\n", j,
-                        shdata_pointer->students[j].matricola,
-                        shdata_pointer->students[j].voto_AdE,
-                        shdata_pointer->students[j].nof_elems, shdata_pointer->students[j].libero,
-                        shdata_pointer->students[j].nof_invites_send);
-
-                for (int k = 0; k < 4; ++k) {
-                    fprintf(f, "- %d | %d \n", shdata_pointer->students[j].utils[k].pid_invitato,
-                            shdata_pointer->students[j].utils[k].reply);
-                }
-
-                fclose(f);
-
-            }
+        printf(ANSI_COLOR_YELLOW "\n======================= TEAMS GENERATED =======================\n" ANSI_COLOR_RESET);
 
 
-        }
-
-
-        printf("\n==== GRUPPI =====\n");
         for (int i = 0; i < POP_SIZE; ++i) {
+
 
             int voto_max = 0;
             if (shdata_pointer->groups[i].compagni[0] > 0 && shdata_pointer->groups[i].chiuso) {
@@ -128,11 +103,8 @@ void signal_handler(int signalVal) {
                 int pidCapo = shdata_pointer->groups[i].compagni[0];
 
                 f = fopen("file.txt", "a");
-                printf("gruppo[%d] n_elems %d n_invites %d | closed: %d | test %d \n",
-                       shdata_pointer->groups[i].compagni[0],
-                       shdata_pointer->students[pidCapo % POP_SIZE].nof_elems,
-                       shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send, shdata_pointer->groups[i].chiuso,
-                       shdata_pointer->students[pidCapo % POP_SIZE].matricola);
+                printf("\nLeader[%d]\n",
+                       shdata_pointer->groups[i].compagni[0]);
 
                 fprintf(f, "gruppo[%d] n_elems %d n_invites_send %d | closed: %d | test %d \n",
                         shdata_pointer->groups[i].compagni[0],
@@ -142,9 +114,7 @@ void signal_handler(int signalVal) {
 
 
                 for (int j = 0; j < 4; ++j) {
-
                     if (shdata_pointer->groups[i].compagni[j] > 0) {
-
                         int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
 
                         fprintf(f, "- %d | %d\n", shdata_pointer->students[x].matricola,
@@ -155,16 +125,12 @@ void signal_handler(int signalVal) {
                             if (voto_max < shdata_pointer->students[x].voto_AdE) {
                                 voto_max = shdata_pointer->students[x].voto_AdE;
                             }
-
                             shdata_pointer->students[x].voto_SO = voto_max;
-
                         }
                     }
                 }
 
-
                 fclose(f);
-
 
                 for (int j = 0; j < 4; ++j) {
                     if (shdata_pointer->groups[i].compagni[j] > 0 && shdata_pointer->groups[i].chiuso) {
@@ -177,26 +143,28 @@ void signal_handler(int signalVal) {
             }
         }
 
+        for (int j = 0; j < POP_SIZE; ++j) {
 
-        for (int l = 0; l < POP_SIZE; ++l) {
-            f = fopen("file.txt", "a");
-            fprintf(f, "[%d]  voto_ade = %d | lib %d | voto_so %d | noof_inv %d | reject %d\n",
-                    shdata_pointer->students[l].matricola,
-                    shdata_pointer->students[l].voto_AdE,
-                    shdata_pointer->students[l].libero, shdata_pointer->students[l].voto_SO,
-                    shdata_pointer->students[l].nof_invites_send, shdata_pointer->students[l].nof_reject);
-            fclose(f);
+            kill(shdata_pointer->students[j].matricola, SIGINT);
+
+            //aspetto che il figlio gestisca il segnale
+            pid_t child = wait(&status);
+
+
+            if (child > 0 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+
+            }
         }
 
+
         releaseSem(1);
-
-
 
         if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(shmem_id, IPC_RMID, NULL)) {
             printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
         } else {
             TEST_ERROR
         }
+
 
         printf(ANSI_COLOR_RED "\n====================== END SIMULATION ======================\n" ANSI_COLOR_RESET);
 

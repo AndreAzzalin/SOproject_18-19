@@ -19,8 +19,9 @@ int main(int argc, char *argv[]) {
 
 
     while (TRUE) {
+
         //uso il sem0 per capire quando tutti i processi sono stati caricati
-        if (getSemVal(0) == 0) {
+        if (!getSemVal(0)) {
 
 
             //se nella coda di messaggi ci sono msg con mtype = al mio pid, leggo il messaggio
@@ -43,15 +44,13 @@ int main(int argc, char *argv[]) {
                 }
 
 
-                if (flag_wait < 0) {
+               /* if (flag_wait < 0) {
 
                     f = fopen("file.txt", "a");
                     fprintf(f, "[%d] INVIO WAIT -> %d\n", getpid(), SH_MITT.matricola);
                     fclose(f);
 
-                    /*
-                     * se non ho ricevuto risposta da tutti invio un wait al mittente
-                     */
+
 
                     for (int i = 0; i < 4; ++i) {
                         if (SH_MITT.utils[i].pid_invitato == getpid()) {
@@ -67,7 +66,9 @@ int main(int argc, char *argv[]) {
                     }
 
 
-                } else if (!SH_INDEX.libero) {
+                } else*/
+
+                    if (!SH_INDEX.libero) {
 
                     /*
                      * se per qualche motivo non sono più libero toglimi dalla lista
@@ -278,13 +279,12 @@ void init() {
 
     //mi allaccio alle strutture IPC
     key = setKey();
-   // sem_id = semget(key, 0, IPC_CREAT);
-    sem_id = semget(key, 2, IPC_CREAT| 0666);
+    // sem_id = semget(key, 0, IPC_CREAT);
+    sem_id = semget(key, 2, IPC_CREAT | 0666);
     shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
     shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
 
     my_msg_queue = getMsgQueue();
-
 
 
     TEST_ERROR
@@ -346,6 +346,13 @@ void signal_handler(int signalVal) {
     if (signalVal == SIGINT) {
 
 
+        f = fopen("file.txt", "a");
+        fprintf(f, "[%d] voto_SO %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+        fclose(f);
+
+        printf("[%d] voto_SO %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+
+
         //stacco frammento di memoria da processo
         shmdt(shdata_pointer);
 
@@ -353,8 +360,8 @@ void signal_handler(int signalVal) {
 
         shmctl(shmem_id, IPC_RMID, NULL);
 
-
         exit(EXIT_SUCCESS);
+
     }
 }
 

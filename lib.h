@@ -38,8 +38,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 100
-#define SIM_TIME 5
+#define POP_SIZE 1000
+#define SIM_TIME 15
 
 
 #define ID_KEY 'a'
@@ -61,14 +61,12 @@
                                 }\
                             }
 
-//variabili personali per ogni studente
-//int index_POPSIZE;
+
 
 //==== variabili processi ====
 int status;
 
 FILE *f;
-
 
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
