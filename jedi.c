@@ -6,6 +6,9 @@
 
 int main(int argc, char *argv[]) {
 
+
+
+
     printf(ANSI_COLOR_GREEN "\n"
            "/***\n"
            " *    ______                     _   _          _____  _____   \n"
@@ -124,6 +127,7 @@ void signal_handler(int signalVal) {
                         for (int k = 0; k < shdata_pointer->students[pidCapo % POP_SIZE].nof_elems; ++k) {
                             if (voto_max < shdata_pointer->students[x].voto_AdE) {
                                 voto_max = shdata_pointer->students[x].voto_AdE;
+
                             }
                             shdata_pointer->students[x].voto_SO = voto_max;
                         }
@@ -187,7 +191,7 @@ void init() {
     msg_dispari = msgget(KEY_DISPARI, IPC_CREAT | 0666);
 
     //mi accerto che le IPC siano state create
-    if (sem_id == -1 || shmem_id == -1 || msg_id == -1) {
+    if (sem_id == -1 || shmem_id == -1 || msg_pari == -1 || msg_dispari == -1) {
         TEST_ERROR
     }
 

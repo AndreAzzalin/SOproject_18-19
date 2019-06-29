@@ -30,54 +30,17 @@ int main(int argc, char *argv[]) {
 
 
                 reserveSem(1);
-                /*
-                 * se non ho ricevuto tutte le risposte invio un WAIT
-                 * se ricevo un wait è come se rifiutassi ma senza reject--
-                 *
-                 */
-
-                for (int j = 0; j < nof_invites; ++j) {
-                    if (SH_INDEX.utils[j].pid_invitato > 0 && SH_INDEX.utils[j].reply == FALSE) {
-                        flag_wait = 1;
-                        break;
-                    }
-                }
 
 
-               /* if (flag_wait < 0) {
-
-                    f = fopen("file.txt", "a");
-                    fprintf(f, "[%d] INVIO WAIT -> %d\n", getpid(), SH_MITT.matricola);
-                    fclose(f);
-
-
-
-                    for (int i = 0; i < 4; ++i) {
-                        if (SH_MITT.utils[i].pid_invitato == getpid()) {
-                            SH_MITT.utils[i].pid_invitato = -1;
-                            SH_MITT.utils[i].reply = FALSE;
-                            break;
-                        }
-                    }
-
-
-                    if (SH_MITT.nof_invites_send != nof_invites) {
-                        SH_MITT.nof_invites_send++;
-                    }
-
-
-                } else*/
-
-                    if (!SH_INDEX.libero) {
+                if (!SH_INDEX.libero) {
 
                     /*
                      * se per qualche motivo non sono più libero toglimi dalla lista
                      */
 
                     for (int i = 0; i < 4; ++i) {
-                        if (SH_MITT.utils[i].pid_invitato == getpid()) {
-                            SH_MITT.utils[i].pid_invitato = -1;
-                            SH_MITT.utils[i].reply = FALSE;
+                        if (SH_MITT.pid_invitato[i] == getpid()) {
+                            SH_MITT.pid_invitato[i] = -1;
                             break;
                         }
                     }
@@ -100,7 +63,7 @@ int main(int argc, char *argv[]) {
                      */
 
 
-                    SET_REPLY_TRUE
+
 
                     /*
                      * faccio creare il gruppo se sono il primo ad accettare
@@ -113,7 +76,7 @@ int main(int argc, char *argv[]) {
                             G_MITT_INDEX.compagni[0], SH_MITT.matricola, G_MITT_INDEX.chiuso);
                     fclose(f);
 
-                    if (SH_MITT.libero == TRUE) {
+                    if (SH_MITT.libero) {
 
 
                         SH_MITT.libero = FALSE;
@@ -125,8 +88,6 @@ int main(int argc, char *argv[]) {
 
                         if (SH_MITT.nof_elems == 2) {
                             G_MITT_INDEX.chiuso = TRUE;
-                        } else {
-                            G_MITT_INDEX.chiuso = FALSE;
                         }
 
                         f = fopen("file.txt", "a");
@@ -141,7 +102,6 @@ int main(int argc, char *argv[]) {
                          * sono capo e devo chiudere il gruppo
                          * rimane caso gruppi formati da 3 o 4 studenti
                          */
-
 
                         SH_MITT.libero = FALSE;
                         SH_INDEX.libero = FALSE;
@@ -171,13 +131,11 @@ int main(int argc, char *argv[]) {
                             SH_INDEX.nof_reject);
                     fclose(f);
 
-                    SET_REPLY_TRUE
+
                     SH_INDEX.nof_reject--;
                 }
 
                 releaseSem(1);
-
-
             }
 
 
@@ -209,7 +167,7 @@ int main(int argc, char *argv[]) {
 
                     //controllo a quali studenti ho giù chiesto
                     for (int i = 0; i < 4; ++i) {
-                        if (SH_INDEX.utils[i].pid_invitato == SH_TO_INVITE.matricola) {
+                        if (SH_INDEX.pid_invitato[i] == SH_TO_INVITE.matricola) {
                             //ho già chiesto quindi non invio
                             flag_no_spam = FALSE;
                         }
@@ -225,9 +183,8 @@ int main(int argc, char *argv[]) {
                              fclose(f);*/
 
                         for (int i = 0; i < 4; ++i) {
-                            if (SH_INDEX.utils[i].pid_invitato == -1) {
-                                SH_INDEX.utils[i].pid_invitato = SH_TO_INVITE.matricola;
-                                SH_INDEX.utils[i].reply = FALSE;
+                            if (SH_INDEX.pid_invitato[i] == -1) {
+                                SH_INDEX.pid_invitato[i] = SH_TO_INVITE.matricola;
                                 break;
                             }
                         }
@@ -235,13 +192,12 @@ int main(int argc, char *argv[]) {
 
                         SH_INDEX.nof_invites_send--;
 
-
                         msg_queue.mtype = SH_TO_INVITE.matricola;
                         msg_queue.student_mitt = getpid();
 
-
                         if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
                             TEST_ERROR
+
                     }
                 }
 
@@ -260,14 +216,13 @@ int main(int argc, char *argv[]) {
 
 
             index_POPSIZE++;
-
             if (index_POPSIZE == POP_SIZE) {
                 index_POPSIZE = 0;
             }
+
             releaseSem(1);
         }
     }
-
 }
 
 
@@ -314,8 +269,7 @@ void init() {
     SH_INDEX.nof_reject = shdata_pointer->config_values[4];
 
     for (int i = 0; i < nof_invites; ++i) {
-        SH_INDEX.utils[i].pid_invitato = -1;
-        SH_INDEX.utils[i].reply = FALSE;
+        SH_INDEX.pid_invitato[i] = -1;
     }
 
     for (int j = 0; j < POP_SIZE; ++j) {

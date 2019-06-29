@@ -38,8 +38,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 1000
-#define SIM_TIME 15
+#define POP_SIZE 100
+#define SIM_TIME 5
 
 
 #define ID_KEY 'a'
@@ -50,39 +50,30 @@
 #define SH_TO_INVITE shdata_pointer->students[index_POPSIZE]
 #define SH_MITT shdata_pointer->students[INDEX_MITT]
 #define G_INDEX shdata_pointer->groups[INDEX]
-
 #define G_MITT_INDEX shdata_pointer->groups[INDEX_MITT]
-
-
-#define SET_REPLY_TRUE      for (int i = 0; i < 4; ++i) {\
-                                if(SH_MITT.utils[i].pid_invitato == getpid()){\
-                                    SH_MITT.utils[i].reply = TRUE;\
-                                    break;\
-                                }\
-                            }
 
 
 
 //==== variabili processi ====
 int status;
-
+char *arg_null[] = {NULL};
 FILE *f;
 
-struct sigaction sa, sa_old;
-struct my_msg msg_queue;
-struct shdata *shdata_pointer;
 
 
 //==== variabili strutture ====
 key_t key;
 int sem_id;
 int shmem_id;
-int msg_id;
 int msg_pari;
 int msg_dispari;
 
-int indx;
-char *arg_null[] = { NULL};
+struct sigaction sa, sa_old;
+struct my_msg msg_queue;
+struct shdata *shdata_pointer;
+
+
+
 
 
 struct my_msg {
@@ -216,13 +207,6 @@ int initSemAvailable(int semId, int semNum) {
 
 //==== STRUTTURE DATI ====//
 
-
-
-struct msg_util {
-    pid_t pid_invitato;
-    int reply;
-};
-
 struct student {
     pid_t matricola;
     int nof_elems;
@@ -231,9 +215,7 @@ struct student {
     int nof_invites_send;
     int nof_reject;
     int voto_SO;
-
-
-    struct msg_util utils[4];
+    pid_t pid_invitato[4];
 };
 
 struct gruppo {
