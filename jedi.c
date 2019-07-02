@@ -25,9 +25,7 @@ int main(int argc, char *argv[]) {
            " *    \\_____/ \\___/ \\___/\\_____/_/   \\_____/ \\___/ \\___/\\____/ \n"
            " *                                                             \n"
            " *                                                             \n"
-           " */\n" ANSI_COLOR_RESET);
-
-
+           " ***/\n" ANSI_COLOR_RESET);
 
     printf(ANSI_COLOR_RED "================= PADRE[%d] AVVIA SIMULAZIONE ===============\n" ANSI_COLOR_RESET,
            getpid());
@@ -94,7 +92,7 @@ void signal_handler(int signalVal) {
                getpid());
 
 
-        printf(ANSI_COLOR_YELLOW "\n======= GUARDARE IL FILE DI LOGPER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_YELLOW "\n====== GUARDARE IL FILE DI LOG PER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
 
 
         for (int i = 0; i < POP_SIZE; ++i) {
@@ -156,11 +154,13 @@ void signal_handler(int signalVal) {
         }
 
 
-        printf("\nVOTO AdE\n");
+        printf(ANSI_COLOR_RED"\n==================== DEBRIEF SIMULAZIONE ====================\n" ANSI_COLOR_RESET);
 
         /*
          * calcolo statistche per voto architettura
          */
+        printf(ANSI_COLOR_BLUE"\n==================== STATISTICHE ESITI AdE ==================\n" ANSI_COLOR_RESET);
+
         for (int j = 18; j <= 30; j++) {
             cont = 0;
             for (int i = 0; i < POP_SIZE; ++i) {
@@ -169,19 +169,19 @@ void signal_handler(int signalVal) {
                 }
             }
             if (cont != 0)
-                printf("#studenti:%d con voto_AdE:%d\n", cont, j);
+                printf("Voto: %d | numero studenti: %d\n", j, cont);
         }
 
         for (int l = 0; l < POP_SIZE; ++l) {
             SUM_voto_AdE += shdata_pointer->students[l].voto_AdE;
         }
-        printf("media  voto_AdE:%.2lf\n", (double) SUM_voto_AdE / POP_SIZE);
+        printf("\nMedia dei voti:%.2lf\n", (double) SUM_voto_AdE / POP_SIZE);
 
 
         /*
        * calcolo statistche per voto SO
        */
-        printf("VOTO SO\n");
+        printf(ANSI_COLOR_BLUE"\n==================== STATISTICHE ESITI SO ==================\n" ANSI_COLOR_RESET);
 
 
         for (int j = 18; j <= 30; j++) {
@@ -192,7 +192,7 @@ void signal_handler(int signalVal) {
                 }
             }
             if (cont != 0)
-                printf("#studenti:%d con voto_SO:%d\n", cont, j);
+                printf("Voto: %d | numero studenti: %d\n", j, cont);
         }
 
         int SUM_voto_SO = 0;
@@ -204,7 +204,7 @@ void signal_handler(int signalVal) {
             }
         }
 
-        printf("media  voto_AdE:%.2lf\n", (double) SUM_voto_SO / promossiSO);
+        printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
 
         releaseSem(1);
 

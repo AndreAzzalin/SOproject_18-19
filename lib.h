@@ -42,8 +42,6 @@
 #define SIM_TIME 5
 
 
-
-
 #define ID_KEY 'a'
 #define KEY_PARI 2
 #define KEY_DISPARI 1
