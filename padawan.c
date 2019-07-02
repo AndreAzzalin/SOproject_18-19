@@ -299,12 +299,20 @@ void init() {
 void signal_handler(int signalVal) {
     if (signalVal == SIGINT) {
 
+        if (SH_INDEX.voto_SO > 0) {
+            f = fopen("file.txt", "a");
+            fprintf(f, "[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+            fclose(f);
 
-        f = fopen("file.txt", "a");
-        fprintf(f, "[%d] voto_SO %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
-        fclose(f);
+            printf("[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+        } else {
+            f = fopen("file.txt", "a");
+            fprintf(f, "[%d] voto Sistemi Operativi: BOCCIATO\n", SH_INDEX.matricola);
+            fclose(f);
 
-        printf("[%d] voto_SO %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+            printf("[%d] voto Sistemi Operativi: BOCCIATO \n", SH_INDEX.matricola);
+        }
+
 
 
         //stacco frammento di memoria da processo

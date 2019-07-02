@@ -42,6 +42,8 @@
 #define SIM_TIME 5
 
 
+
+
 #define ID_KEY 'a'
 #define KEY_PARI 2
 #define KEY_DISPARI 1
@@ -53,12 +55,10 @@
 #define G_MITT_INDEX shdata_pointer->groups[INDEX_MITT]
 
 
-
 //==== variabili processi ====
 int status;
 char *arg_null[] = {NULL};
 FILE *f;
-
 
 
 //==== variabili strutture ====
@@ -73,13 +73,10 @@ struct my_msg msg_queue;
 struct shdata *shdata_pointer;
 
 
-
-
-
 struct my_msg {
     long mtype;
     pid_t student_mitt;
- };
+};
 
 
 union semun {
@@ -221,6 +218,7 @@ struct student {
 struct gruppo {
     pid_t compagni[4];
     int chiuso;
+    int voto;
 };
 
 struct shdata {

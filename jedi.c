@@ -1,12 +1,10 @@
 #include "lib.h"
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+
+int cont, SUM_voto_AdE = 0;
 
 
 int main(int argc, char *argv[]) {
-
-
 
 
     printf(ANSI_COLOR_GREEN "\n"
@@ -29,7 +27,9 @@ int main(int argc, char *argv[]) {
            " *                                                             \n"
            " */\n" ANSI_COLOR_RESET);
 
-    printf(ANSI_COLOR_RED "=============== PADRE[%d] STARTING SIMULATION ===============\n" ANSI_COLOR_RESET,
+
+
+    printf(ANSI_COLOR_RED "================= PADRE[%d] AVVIA SIMULAZIONE ===============\n" ANSI_COLOR_RESET,
            getpid());
 
 
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     TEST_ERROR
 
 
-    printf(ANSI_COLOR_YELLOW"\n================== INITIALIZATION  COMPLETE ====================\n"ANSI_COLOR_RESET
+    printf(ANSI_COLOR_YELLOW"\n================ CARICAMENTO RISORSE COMPLETATO ===============\n"ANSI_COLOR_RESET
            ANSI_COLOR_BLUE "\n ======= ID IPC ======= \n" ANSI_COLOR_RESET
            " - sh_id  = %d\n"
            " - msg_pari = %d\n"
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf(ANSI_COLOR_YELLOW"\n=========================== LOADING... ========================\n"ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_YELLOW"\n===================== CREAZIONE GRUPPI... =====================\n"ANSI_COLOR_RESET);
 
     //padre attende che tutti i figli terminino prima di terminare
     for (int i = 0; i < POP_SIZE; ++i) {
@@ -90,11 +90,11 @@ void signal_handler(int signalVal) {
         releaseSem(0);
 
 
-        printf(ANSI_COLOR_RED "\n==================== PADRE[%d] SIGALRM =====================\n" ANSI_COLOR_RESET,
+        printf(ANSI_COLOR_RED "\n================ PADRE[%d] SIM TIME TERMINATO ===============\n" ANSI_COLOR_RESET,
                getpid());
 
 
-        printf(ANSI_COLOR_YELLOW "\n======================= TEAMS GENERATED =======================\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_YELLOW "\n======= GUARDARE IL FILE DI LOGPER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
 
 
         for (int i = 0; i < POP_SIZE; ++i) {
@@ -106,9 +106,6 @@ void signal_handler(int signalVal) {
                 int pidCapo = shdata_pointer->groups[i].compagni[0];
 
                 f = fopen("file.txt", "a");
-                printf("\nLeader[%d]\n",
-                       shdata_pointer->groups[i].compagni[0]);
-
                 fprintf(f, "gruppo[%d] n_elems %d n_invites_send %d | closed: %d | test %d \n",
                         shdata_pointer->groups[i].compagni[0],
                         shdata_pointer->students[pidCapo % POP_SIZE].nof_elems,
@@ -116,6 +113,9 @@ void signal_handler(int signalVal) {
                         shdata_pointer->students[pidCapo % POP_SIZE].matricola);
 
 
+                /*
+                 * assegno voto di SO
+                 */
                 for (int j = 0; j < 4; ++j) {
                     if (shdata_pointer->groups[i].compagni[j] > 0) {
                         int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
@@ -123,30 +123,26 @@ void signal_handler(int signalVal) {
                         fprintf(f, "- %d | %d\n", shdata_pointer->students[x].matricola,
                                 shdata_pointer->students[x].voto_AdE);
 
-
-                        for (int k = 0; k < shdata_pointer->students[pidCapo % POP_SIZE].nof_elems; ++k) {
-                            if (voto_max < shdata_pointer->students[x].voto_AdE) {
-                                voto_max = shdata_pointer->students[x].voto_AdE;
-
-                            }
-                            shdata_pointer->students[x].voto_SO = voto_max;
+                        if (voto_max < shdata_pointer->students[x].voto_AdE) {
+                            voto_max = shdata_pointer->students[x].voto_AdE;
                         }
+                        shdata_pointer->groups[i].voto = voto_max;
+                    }
+                }
+
+
+                for (int z = 0; z < 4; ++z) {
+                    if (shdata_pointer->groups[i].compagni[z] > 0) {
+                        int x = shdata_pointer->groups[i].compagni[z] % POP_SIZE;
+                        shdata_pointer->students[x].voto_SO = shdata_pointer->groups[i].voto;
                     }
                 }
 
                 fclose(f);
-
-                for (int j = 0; j < 4; ++j) {
-                    if (shdata_pointer->groups[i].compagni[j] > 0 && shdata_pointer->groups[i].chiuso) {
-                        int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
-                        printf("- %d | %d\n", shdata_pointer->students[x].matricola,
-                               shdata_pointer->students[x].voto_AdE);
-                    }
-                }
-                printf("\n");
             }
         }
 
+        printf("\n");
         for (int j = 0; j < POP_SIZE; ++j) {
 
             kill(shdata_pointer->students[j].matricola, SIGINT);
@@ -154,14 +150,64 @@ void signal_handler(int signalVal) {
             //aspetto che il figlio gestisca il segnale
             pid_t child = wait(&status);
 
-
-            if (child > 0 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-
+            if (child > 0 || WIFEXITED(status) || WEXITSTATUS(status)) {
+                TEST_ERROR
             }
         }
 
 
+        printf("\nVOTO AdE\n");
+
+        /*
+         * calcolo statistche per voto architettura
+         */
+        for (int j = 18; j <= 30; j++) {
+            cont = 0;
+            for (int i = 0; i < POP_SIZE; ++i) {
+                if (shdata_pointer->students[i].voto_AdE == j) {
+                    cont++;
+                }
+            }
+            if (cont != 0)
+                printf("#studenti:%d con voto_AdE:%d\n", cont, j);
+        }
+
+        for (int l = 0; l < POP_SIZE; ++l) {
+            SUM_voto_AdE += shdata_pointer->students[l].voto_AdE;
+        }
+        printf("media  voto_AdE:%.2lf\n", (double) SUM_voto_AdE / POP_SIZE);
+
+
+        /*
+       * calcolo statistche per voto SO
+       */
+        printf("VOTO SO\n");
+
+
+        for (int j = 18; j <= 30; j++) {
+            cont = 0;
+            for (int i = 0; i < POP_SIZE; ++i) {
+                if (shdata_pointer->students[i].voto_SO == j) {
+                    cont++;
+                }
+            }
+            if (cont != 0)
+                printf("#studenti:%d con voto_SO:%d\n", cont, j);
+        }
+
+        int SUM_voto_SO = 0;
+        int promossiSO = 0;
+        for (int l = 0; l < POP_SIZE; ++l) {
+            if (shdata_pointer->students[l].voto_SO > 0) {
+                SUM_voto_SO += shdata_pointer->students[l].voto_SO;
+                promossiSO++;
+            }
+        }
+
+        printf("media  voto_AdE:%.2lf\n", (double) SUM_voto_SO / promossiSO);
+
         releaseSem(1);
+
 
         if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(shmem_id, IPC_RMID, NULL)) {
             printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
@@ -170,7 +216,7 @@ void signal_handler(int signalVal) {
         }
 
 
-        printf(ANSI_COLOR_RED "\n====================== END SIMULATION ======================\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_RED "\n==================== FINE SIMULAZIONE ======================\n" ANSI_COLOR_RESET);
 
         exit(EXIT_SUCCESS);
     }
