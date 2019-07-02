@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
            " - msg_dispari = %d\n"
            " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
 
-    reserveSem(1);
+
     printf(ANSI_COLOR_BLUE "\n ===== CONFIG VAR ===== \n" ANSI_COLOR_RESET
            " - Nof_Students = %d\n"
            " - nof_elem2: %d\n"
@@ -55,6 +55,30 @@ int main(int argc, char *argv[]) {
            shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
     releaseSem(1);
 
+    f = fopen("log.txt", "a");
+    fprintf(f,"\n================ CARICAMENTO RISORSE COMPLETATO ===============\n"
+            "\n ======= ID IPC ======= \n"
+           " - sh_id  = %d\n"
+           " - msg_pari = %d\n"
+           " - msg_dispari = %d\n"
+           " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
+
+
+    fprintf(f, "\n ===== CONFIG VAR ===== \n"
+           " - Nof_Students = %d\n"
+           " - nof_elem2: %d\n"
+           " - nof_elem3: %d\n"
+           " - nof_elem4: %d\n"
+           " - nof_invites: %d\n"
+           " - max_reject: %d\n",
+           POP_SIZE, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
+           shdata_pointer->config_values[2],
+           shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
+
+    fprintf(f,"\n======= INIZIO SCAMBIO DI MESSAGGI STUDENTI =======\n");
+    fclose(f);
+
+    reserveSem(1);
 
     for (int i = 0; i < POP_SIZE; i++) {
         switch (fork()) {
@@ -95,20 +119,23 @@ void signal_handler(int signalVal) {
         printf(ANSI_COLOR_YELLOW "\n====== GUARDARE IL FILE DI LOG PER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
 
 
+
+
+        f = fopen("log.txt", "a");
+        fprintf(f, "\n============== ELENCO GRUPPI CREATI ===========\n\n");
+        fclose(f);
+
         for (int i = 0; i < POP_SIZE; ++i) {
-
-
             int voto_max = 0;
             if (shdata_pointer->groups[i].compagni[0] > 0 && shdata_pointer->groups[i].chiuso) {
 
                 int pidCapo = shdata_pointer->groups[i].compagni[0];
 
-                f = fopen("file.txt", "a");
-                fprintf(f, "gruppo[%d] n_elems %d n_invites_send %d | closed: %d | test %d \n",
+                f = fopen("log.txt", "a");
+                fprintf(f, "LEADER[%d] n_elems %d | n_invites_send %d\n",
                         shdata_pointer->groups[i].compagni[0],
                         shdata_pointer->students[pidCapo % POP_SIZE].nof_elems,
-                        shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send, shdata_pointer->groups[i].chiuso,
-                        shdata_pointer->students[pidCapo % POP_SIZE].matricola);
+                        shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send);
 
 
                 /*
@@ -118,8 +145,8 @@ void signal_handler(int signalVal) {
                     if (shdata_pointer->groups[i].compagni[j] > 0) {
                         int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
 
-                        fprintf(f, "- %d | %d\n", shdata_pointer->students[x].matricola,
-                                shdata_pointer->students[x].voto_AdE);
+                        fprintf(f, "\t- Studente [%d] | voto_AdE: %d | nof_elems: %d\n", shdata_pointer->students[x].matricola,
+                                shdata_pointer->students[x].voto_AdE,shdata_pointer->students[x].nof_elems);
 
                         if (voto_max < shdata_pointer->students[x].voto_AdE) {
                             voto_max = shdata_pointer->students[x].voto_AdE;
@@ -141,6 +168,11 @@ void signal_handler(int signalVal) {
         }
 
         printf("\n");
+
+        f = fopen("log.txt", "a");
+        fprintf(f, "\n============== ELENCO VOTI STUDENTI ===========\n\n");
+        fclose(f);
+
         for (int j = 0; j < POP_SIZE; ++j) {
 
             kill(shdata_pointer->students[j].matricola, SIGINT);
@@ -215,6 +247,9 @@ void signal_handler(int signalVal) {
             TEST_ERROR
         }
 
+        f = fopen("log.txt", "a");
+        fprintf(f, "\n============== FINE SIMULAZIONE ===========\n\n");
+        fclose(f);
 
         printf(ANSI_COLOR_RED "\n==================== FINE SIMULAZIONE ======================\n" ANSI_COLOR_RESET);
 

@@ -21,10 +21,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define INDEX getpid()%POP_SIZE
-#define INDEX_MITT msg_queue.student_mitt%POP_SIZE
-
-
 /*--- colors ---*/
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -34,18 +30,18 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
 #define POP_SIZE 100
 #define SIM_TIME 5
 
-
 #define ID_KEY 'a'
 #define KEY_PARI 2
 #define KEY_DISPARI 1
 
+#define INDEX getpid()%POP_SIZE
+#define INDEX_MITT msg_queue.student_mitt%POP_SIZE
 #define SH_INDEX shdata_pointer->students[INDEX]
 #define SH_TO_INVITE shdata_pointer->students[index_POPSIZE]
 #define SH_MITT shdata_pointer->students[INDEX_MITT]
@@ -137,8 +133,6 @@ int *read_config() {
     int nof_elems2 = getPercentNof_elems(getConfigValue(nof_elems2_toConvert), POP_SIZE);
     int nof_elems3 = getPercentNof_elems(getConfigValue(nof_elems3_toConvert), POP_SIZE);
     int nof_elems4 = getPercentNof_elems(getConfigValue(nof_elems4_toConvert), POP_SIZE);
-
-    //printf("\n%s |  %d\n",nof_elems2_toConvert,nof_elems2);
 
     int nof_invites = getConfigValue(nof_invites_toConvert);
     int max_reject = getConfigValue(max_reject_toConvert);
