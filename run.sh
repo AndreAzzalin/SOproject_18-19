@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-gcc -o padawan padawan.c -lm
-gcc -o jedi jedi.c -lm
-./jedi
+gcc -o student student.c -lm
+gcc -o gestore gestore.c -lm
+./gestore

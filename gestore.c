@@ -56,26 +56,26 @@ int main(int argc, char *argv[]) {
     releaseSem(1);
 
     f = fopen("log.txt", "a");
-    fprintf(f,"\n================ CARICAMENTO RISORSE COMPLETATO ===============\n"
-            "\n ======= ID IPC ======= \n"
-           " - sh_id  = %d\n"
-           " - msg_pari = %d\n"
-           " - msg_dispari = %d\n"
-           " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
+    fprintf(f, "\n================ CARICAMENTO RISORSE COMPLETATO ===============\n"
+               "\n ======= ID IPC ======= \n"
+               " - sh_id  = %d\n"
+               " - msg_pari = %d\n"
+               " - msg_dispari = %d\n"
+               " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
 
 
     fprintf(f, "\n ===== CONFIG VAR ===== \n"
-           " - Nof_Students = %d\n"
-           " - nof_elem2: %d\n"
-           " - nof_elem3: %d\n"
-           " - nof_elem4: %d\n"
-           " - nof_invites: %d\n"
-           " - max_reject: %d\n",
-           POP_SIZE, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
-           shdata_pointer->config_values[2],
-           shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
+               " - Nof_Students = %d\n"
+               " - nof_elem2: %d\n"
+               " - nof_elem3: %d\n"
+               " - nof_elem4: %d\n"
+               " - nof_invites: %d\n"
+               " - max_reject: %d\n",
+            POP_SIZE, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
+            shdata_pointer->config_values[2],
+            shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
 
-    fprintf(f,"\n======= INIZIO SCAMBIO DI MESSAGGI STUDENTI =======\n");
+    fprintf(f, "\n======= INIZIO SCAMBIO DI MESSAGGI STUDENTI =======\n");
     fclose(f);
 
     reserveSem(1);
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
                 TEST_ERROR;
                 break;
             case 0:
-                execve("padawan", arg_null, arg_null);
+                execve("student", arg_null, arg_null);
                 break;
         }
     }
@@ -119,8 +119,6 @@ void signal_handler(int signalVal) {
         printf(ANSI_COLOR_YELLOW "\n====== GUARDARE IL FILE DI LOG PER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
 
 
-
-
         f = fopen("log.txt", "a");
         fprintf(f, "\n============== ELENCO GRUPPI CREATI ===========\n\n");
         fclose(f);
@@ -145,8 +143,9 @@ void signal_handler(int signalVal) {
                     if (shdata_pointer->groups[i].compagni[j] > 0) {
                         int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
 
-                        fprintf(f, "\t- Studente [%d] | voto_AdE: %d | nof_elems: %d\n", shdata_pointer->students[x].matricola,
-                                shdata_pointer->students[x].voto_AdE,shdata_pointer->students[x].nof_elems);
+                        fprintf(f, "\t- Studente [%d] | voto_AdE: %d | nof_elems: %d\n",
+                                shdata_pointer->students[x].matricola,
+                                shdata_pointer->students[x].voto_AdE, shdata_pointer->students[x].nof_elems);
 
                         if (voto_max < shdata_pointer->students[x].voto_AdE) {
                             voto_max = shdata_pointer->students[x].voto_AdE;
@@ -282,13 +281,12 @@ void init() {
 
 
     //leggo e salvo le variabili di configurazione su sm
-    reserveSem(1);
     int *config_array = read_config();
 
     for (int i = 0; i < 5; ++i) {
         shdata_pointer->config_values[i] = config_array[i];
     }
-    releaseSem(1);
+
 
 
     //punto alla funzione che gestirà il segnale
@@ -303,13 +301,10 @@ void init() {
 }
 
 void start_sim_time() {
-    reserveSem(1);
     int length = sizeof(shdata_pointer->students) / sizeof(shdata_pointer->students[0]);
     if (length == POP_SIZE) {
         alarm(SIM_TIME);
     }
-
-    releaseSem(1);
 }
 
 

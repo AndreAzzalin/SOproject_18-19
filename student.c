@@ -1,229 +1,331 @@
-#include "libs_structs.h"
+#include "lib.h"
 
-int npref[3];
-int prob[100] = {0};
-mid1 = 0;
+//variabilii util solo per student
+int my_nof_elems;
+int my_voto_AdE;
+int nof_invites;
+
+int my_msg_queue;
+int flag_no_spam = TRUE;
+int index_POPSIZE = 0;
+
 
 int main(int argc, char *argv[]) {
+
+
     init();
-    att(0);
-    i = 0;
-    op.sem_num = 0;
-    op.sem_op = 0;
-    semop(semid, &op, 1);
+    TEST_ERROR
+
+    while (TRUE) {
+
+        //uso il sem0 per capire quando tutti i processi sono stati caricati
+        if (!getSemVal(0)) {
 
 
-    while (1) {
-
-        while (msgrcv(mid, &msg, sizeof(msg) - sizeof(long), pid, IPC_NOWAIT) == sizeof(msg) - sizeof(long)) {
-            att(1);
-            printf("\nSono(%d)\t", pid);
+            //se nella coda di messaggi ci sono msg con mtype = al mio pid, leggo il messaggio
+            while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
+                   sizeof(msg_queue) - sizeof(long)) {
 
 
-            if (sh_data->info[indx].accettato == 0) {
-                if (nrejects == 0)
-                    accept();
-                else if (voto <= sh_data->info[msg.mpid % POP_SIZE].vote) {
-                    accept();
-                } else {
-                    refuse();
+                reserveSem(1);
+
+
+                if (!SH_INDEX.libero) {
+
+                    /*
+                     * se per qualche motivo non sono più libero toglimi dalla lista
+                     */
+
+                    for (int i = 0; i < 4; ++i) {
+                        if (SH_MITT.pid_invitato[i] == getpid()) {
+                            SH_MITT.pid_invitato[i] = -1;
+                            break;
+                        }
+                    }
+
+
+                    if (SH_MITT.nof_invites_send != nof_invites) {
+                        SH_MITT.nof_invites_send++;
+                    }
+
+
+                } else if ((SH_INDEX.libero && (SH_INDEX.voto_AdE - SH_MITT.voto_AdE < 5 ||
+                                                SH_MITT.voto_AdE - SH_INDEX.voto_AdE > -5)) ||
+
+                           (SH_INDEX.nof_reject <= 0 && SH_INDEX.libero)) {
+                    /*
+                     * accetta se compatibile o se ha finito i reject
+                     * viene impostato il mitta true
+                     * viene inserito nel gruppo
+                     * se è il primo
+                     */
+
+                    f = fopen("log.txt", "a");
+                    fprintf(f, "[%d] Accetto -> [%d]\n", getpid(), SH_MITT.matricola);
+                    fclose(f);
+
+
+
+                    /*
+                     * faccio creare il gruppo se sono il primo ad accettare
+                     * se il gruppo già esiste ed è aperto mi inserisco
+                     */
+                    if (SH_MITT.libero) {
+
+
+                        SH_MITT.libero = FALSE;
+                        SH_INDEX.libero = FALSE;
+
+                        G_MITT_INDEX.compagni[0] = SH_MITT.matricola;
+                        G_MITT_INDEX.compagni[1] = getpid();
+
+
+                        if (SH_MITT.nof_elems == 2) {
+                            G_MITT_INDEX.chiuso = TRUE;
+                        }
+
+                        f = fopen("log.txt", "a");
+
+                        fprintf(f, "[%d] Creato gruppo capo -> [%d]\n", getpid(), SH_MITT.matricola);
+                        fclose(f);
+
+
+                    } else if ((G_MITT_INDEX.compagni[0] == SH_MITT.matricola) && (G_MITT_INDEX.chiuso == FALSE)) {
+
+                        /*
+                         * sono capo e devo chiudere il gruppo
+                         * rimane caso gruppi formati da 3 o 4 studenti
+                         */
+
+                        SH_MITT.libero = FALSE;
+                        SH_INDEX.libero = FALSE;
+
+
+
+                        for (int i = 0; i < SH_MITT.nof_elems; ++i) {
+                            if (G_MITT_INDEX.compagni[i] == -1) {
+                                G_MITT_INDEX.compagni[i] = getpid();
+                                break;
+                            }
+                        }
+
+                        if (G_MITT_INDEX.compagni[SH_MITT.nof_elems - 1] > 0) {
+                            G_MITT_INDEX.chiuso = TRUE;
+                        }
+                    }
+
+
+                } else if (SH_INDEX.nof_reject > 0) {
+
+                    /*
+                     * rifiuto per incompatibilità
+                     */
+
+                    f = fopen("log.txt", "a");
+                    fprintf(f, "[%d] Rifiuto -> [%d]\n", getpid(), SH_MITT.matricola);
+                    fclose(f);
+
+
+                    SH_INDEX.nof_reject--;
                 }
-            } else if (nrejects > 0 && sh_data->info[msg.mpid % POP_SIZE].pref == pref)
-                accept();
-            else if (ninvits == 0)
-                refuse();
-            else
-                refuse();
 
-            sig(1);
-            break;
-        }
-
-
-        msg.mpid = pid;
-
-        if (ninvits > 0 && (sh_data->info[indx].accettato == 0 ||
-                            (sh_data->gruppi[indx].compagni[0] == pid && sh_data->gruppi[indx].chiuso == 0))) {
-            att(1);
-            if (pid % 2 == sh_data->info[i].matr % 2 && sh_data->info[i].accettato == 0 &&
-                sh_data->gruppi[i].compagni[0] == 0 && pid != sh_data->info[i].matr && sh_data->info[i].pref <= pref) {
-                msg.mtype = sh_data->info[i].matr;
-                ninvits--;
-                if (msgsnd(mid, &msg, sizeof(msg) - sizeof(long), 0) < 0) TEST_ERROR;
+                releaseSem(1);
             }
-            sig(1);
-            i++;
 
-            if (i == POP_SIZE)
-                i = 0;
+
+            /*
+             *
+             *  SEZIONE INVIO
+             *
+             */
+
+
+            reserveSem(1);
+
+            flag_no_spam = TRUE;
+
+            /*
+             * se ho inviti disponibili
+             * se sono libero
+             * se sono capo e non ho ancora chiuso il gruppo
+             */
+            if ((SH_INDEX.nof_invites_send > 0 && SH_INDEX.libero) ||
+                (G_INDEX.compagni[0] == getpid() && G_INDEX.chiuso == FALSE && SH_INDEX.nof_invites_send > 0)) {
+
+
+                //cerco studenti compatibili
+                if (checkPariDispari(SH_TO_INVITE.matricola) && SH_TO_INVITE.libero &&
+                    (SH_INDEX.matricola != SH_TO_INVITE.matricola) &&
+                    (SH_TO_INVITE.nof_elems == SH_INDEX.nof_elems)) {
+
+
+                    //controllo a quali studenti ho giù chiesto
+                    for (int i = 0; i < 4; ++i) {
+                        if (SH_INDEX.pid_invitato[i] == SH_TO_INVITE.matricola) {
+                            //ho già chiesto quindi non invio
+                            flag_no_spam = FALSE;
+                        }
+                    }
+
+                    /*
+                     * se non ho mai invitato aggiungo alla lista di invitati
+                     */
+                    if (flag_no_spam) {
+
+                          f = fopen("log.txt", "a");
+                             fprintf(f, "[%d] Invito -> [%d]\n", getpid(), SH_TO_INVITE.matricola);
+                             fclose(f);
+
+                        for (int i = 0; i < 4; ++i) {
+                            if (SH_INDEX.pid_invitato[i] == -1) {
+                                SH_INDEX.pid_invitato[i] = SH_TO_INVITE.matricola;
+                                break;
+                            }
+                        }
+
+
+                        SH_INDEX.nof_invites_send--;
+                        msg_queue.mtype = SH_TO_INVITE.matricola;
+                        msg_queue.student_mitt = getpid();
+
+                        if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
+                            TEST_ERROR
+
+                    }
+                }
+
+            } else if (SH_INDEX.libero && SH_INDEX.nof_invites_send <= 0 && SH_INDEX.nof_reject <= 0) {
+                /*
+                 * se ho finito gli inviti, non sono ancora in nessnu gruppo
+                 * e ho un voto compreso tra 27 e 30 mi creo un gruppo da solo
+                 */
+
+                if (30 - SH_INDEX.voto_AdE <= 3) {
+                    G_INDEX.compagni[0] = getpid();
+                    G_INDEX.chiuso = TRUE;
+                    SH_INDEX.libero = FALSE;
+                }
+            }
+
+
+            index_POPSIZE++;
+            if (index_POPSIZE == POP_SIZE) {
+                index_POPSIZE = 0;
+            }
+
+            releaseSem(1);
         }
     }
-    exit(EXIT_SUCCESS);
 }
+
 
 void init() {
-    read_config();
 
-    srand(pid = getpid());
 
-    openipc();
+    //per random
+    srand(getpid());
 
-    //assegno preferenza gruppo (così non va bene)
-    pref = prob[rand() % 100];
+    //mi allaccio alle strutture IPC
+    key = setKey();
+    sem_id = semget(key, 2, IPC_CREAT | 0666);
+    shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
+    shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
 
-    //assegno voto
-    voto = rand() % 13 + 18;
-    indx = pid % POP_SIZE;
+    my_msg_queue = getMsgQueue();
 
-    //acquisisci risorsa sh_data
-    att(1);
-    sh_data->info[indx].matr = pid;
-    sh_data->info[indx].vote = voto;
-    sh_data->info[indx].pref = pref;
-    printf("\tStudente #%d\tmatricola %d\tvoto %d\tpreferenza %d\n", indx, pid, voto, pref);
-    sh_data->info[indx].accettato = 0;
-    //rilascia risorsa sh_data
-    sig(1);
-    atexit(aexit);
-}
 
-void openipc() {
+    TEST_ERROR
+
+
+    //inizializzo le variabili che caratterizzano uno studente
+    reserveSem(1);
+
+    my_nof_elems = getNof_elems();
+    my_voto_AdE = getVoto();
+
+    nof_invites = shdata_pointer->config_values[3];
+
+
+    SH_INDEX.matricola = getpid();
+    SH_INDEX.nof_elems = my_nof_elems;
+    SH_INDEX.voto_AdE = my_voto_AdE;
+    SH_INDEX.voto_SO = 0;
+    SH_INDEX.libero = TRUE;
+
+
+    SH_INDEX.nof_invites_send = nof_invites;
+    SH_INDEX.nof_reject = shdata_pointer->config_values[4];
+
+    for (int i = 0; i < nof_invites; ++i) {
+        SH_INDEX.pid_invitato[i] = -1;
+    }
+
+    for (int j = 0; j < POP_SIZE; ++j) {
+        G_INDEX.chiuso = FALSE;
+        for (int i = 0; i < 4; ++i) {
+            G_INDEX.compagni[i] = -1;
+        }
+    }
+
+
+    reserveSem(0);
+    releaseSem(1);
+
+    //punto alla funzione che gestirà il segnale
     sa.sa_handler = &signal_handler;
-    sigaction(SIGINT, &sa, &saold);
-    //message per padre
-    msgid = msgget(getppid(), IPC_CREAT);
-    TEST_ERROR;
-    //se il pid(matricola) è pari
-    if (pid % 2) {
-        mid = msgget(K1, 0666);
-    //se il pid(matricola) è dispari
+    //installo handler e controllo errore
+    sigaction(SIGINT, &sa, &sa_old);
+    TEST_ERROR
+
+}
+
+void signal_handler(int signalVal) {
+    if (signalVal == SIGINT) {
+
+        if (SH_INDEX.voto_SO > 0) {
+            f = fopen("log.txt", "a");
+            fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+            fclose(f);
+
+            printf("STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+        } else {
+            f = fopen("log.txt", "a");
+            fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO\n", SH_INDEX.matricola);
+            fclose(f);
+
+            printf("STUDENTE[%d] voto Sistemi Operativi: BOCCIATO \n", SH_INDEX.matricola);
+        }
+
+
+
+        //stacco frammento di memoria da processo
+        shmdt(shdata_pointer);
+
+        msgctl(my_msg_queue, IPC_RMID, NULL);
+
+        shmctl(shmem_id, IPC_RMID, NULL);
+
+        exit(EXIT_SUCCESS);
+
+    }
+}
+
+int checkPariDispari(int matricola_to_compare) {
+    if ((PARI && matricola_to_compare % 2 == 0) || (DISPARI && matricola_to_compare % 2 != 0)) {
+        return TRUE;
     } else {
-        mid = msgget(K0, 0666);
-    }
-
-    TEST_ERROR;
-    semid = semget(getppid(), 0, IPC_CREAT);
-    TEST_ERROR;
-    shrmem = shmget(getppid(), 0, IPC_CREAT);
-    TEST_ERROR;
-    sh_data = (struct shared_data *) shmat(shrmem, NULL, 0);
-    TEST_ERROR;
-}
-
-
-//operazioni su semaforo
-//wait -1 su sem x
-void att(x) {
-    op.sem_num = x;
-    op.sem_op = -1;
-    semop(semid, &op, 1);
-
-}
-
-//signal 1
-void sig(x) {
-    op.sem_num = x;
-    op.sem_op = 1;
-    semop(semid, &op, 1);
-}
-
-//gestione gruppo
-void refuse() {
-    nrejects--;
-    printf("RIFIUTO(%d)\n", msg.mpid);
-}
-
-void accept() {
-    pidcapo = msg.mpid % POP_SIZE;
-    if (sh_data->gruppi[pidcapo].chiuso == 0) {
-        ninvits = 0;
-        sh_data->gruppi[indx].chiuso = 1;
-        sh_data->info[indx].accettato = 1;
-        sh_data->info[pidcapo].accettato = 1;
-
-        if (sh_data->gruppi[pidcapo].cont == 0) {
-            sh_data->gruppi[pidcapo].compagni[sh_data->gruppi[pidcapo].cont++] = pid;
-            sh_data->gruppi[pidcapo].voto = sh_data->info[pidcapo].vote;
-            sh_data->gruppi[pidcapo].compagni[sh_data->gruppi[pidcapo].cont++] = msg.mpid;
-        } else if (sh_data->gruppi[pidcapo].cont <= sh_data->info[pidcapo].pref) {
-            sh_data->gruppi[pidcapo].compagni[sh_data->gruppi[pidcapo].cont++] = msg.mpid;
-            if (sh_data->gruppi[pidcapo].voto < voto)
-                sh_data->gruppi[pidcapo].voto = voto;
-        }
-        if (sh_data->gruppi[pidcapo].cont == sh_data->info[pidcapo].pref) {
-            sh_data->gruppi[pidcapo].chiuso = 1;
-            ninvits = 0;
-            if (msgsnd(msgid, &msg, sizeof(msg) - sizeof(long), 0) < 0) TEST_ERROR;
-        }
-        printf("ACCETTO(%d)\n", msg.mpid);
-    } else refuse();
-}
-
-//leggi da file
-void read_config() {
-    FILE *f = fopen("file.config", "r");
-    int i, j = 0;
-    char s[10];
-
-
-    while (fscanf(f, "%s", s) != -1) {
-        if (i % 2 == 1) {
-            if (i < 6) {
-                npref[j++] = atoi(s);
-            }
-        }
-        if (i == 7) ninvits = atoi(s);
-        if (i == 9) nrejects = atoi(s);
-        ++i;
-    }
-
-    pref = 2;
-    cont = npref[j = 0];
-
-    for (i = 0; i < 100; ++i) {
-        if (i == cont) {
-            pref++;
-            cont += npref[++j];
-        }
-        prob[i] = pref;
-    }
-    TEST_ERROR;
-    fclose(f);
-}
-
-//fine processo
-void aexit() {
-    op.sem_num = 0;
-    op.sem_op = 0;
-    semop(semid, &op, 1);
-
-    for (i = 0; i < POP_SIZE; i++) {
-        j = 0;
-        if (sh_data->gruppi[i].compagni[0] != 0) {
-            while (j < sh_data->gruppi[i].cont) {
-                if (sh_data->gruppi[i].compagni[j] == pid) {
-                    if (sh_data->gruppi[i].voto > 17) {
-                        printf("Matricola %d il mio esito finale_%d\n", pid, sh_data->gruppi[i].voto);
-                    } else printf("Matricola %d il mio esito finale_BOCCIATO\n", pid);
-                }
-                j++;
-            }
-        }
-    }
-    printf("\n");
-    shmdt(sh_data);
-}
-
-
-void signal_handler(signalvalue) {
-    switch (signalvalue) {
-        case SIGINT: {
-            if (sh_data->gruppi[indx].chiuso == 0 && sh_data->gruppi[indx].compagni[0] == pid)
-                sh_data->gruppi[indx].chiuso = 1;
-            att(0);
-            exit(EXIT_SUCCESS);
-        }
+        return FALSE;
     }
 }
+
+int getMsgQueue() {
+    if (PARI) {
+        return msgget(KEY_PARI, IPC_CREAT | 0666);
+    } else {
+        return msgget(KEY_DISPARI, IPC_CREAT | 0666);
+    }
+}
+
+
 
 
