@@ -44,13 +44,14 @@ int main(int argc, char *argv[]) {
 
 
     printf(ANSI_COLOR_BLUE "\n ===== CONFIG VAR ===== \n" ANSI_COLOR_RESET
-           " - Nof_Students = %d\n"
+           " - POP_SIZE = %d\n"
+           " - SIM_TIME = %d\n"
            " - nof_elem2: %d\n"
            " - nof_elem3: %d\n"
            " - nof_elem4: %d\n"
            " - nof_invites: %d\n"
            " - max_reject: %d\n",
-           POP_SIZE, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
+           POP_SIZE, SIM_TIME, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
            shdata_pointer->config_values[2],
            shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
     releaseSem(1);
@@ -65,13 +66,14 @@ int main(int argc, char *argv[]) {
 
 
     fprintf(f, "\n ===== CONFIG VAR ===== \n"
-               " - Nof_Students = %d\n"
+               " - POP_SIZE = %d\n"
+               " - SIM_TIME = %d\n"
                " - nof_elem2: %d\n"
                " - nof_elem3: %d\n"
                " - nof_elem4: %d\n"
                " - nof_invites: %d\n"
                " - max_reject: %d\n",
-            POP_SIZE, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
+            POP_SIZE, SIM_TIME, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
             shdata_pointer->config_values[2],
             shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
 
@@ -95,11 +97,9 @@ int main(int argc, char *argv[]) {
 
     //padre attende che tutti i figli terminino prima di terminare
     for (int i = 0; i < POP_SIZE; ++i) {
-        wait(&status);
+        int returnStatus;
+        waitpid(shdata_pointer->students[i].matricola, &returnStatus, 0);
     }
-
-
-    exit(EXIT_SUCCESS);
 }
 
 
@@ -252,7 +252,7 @@ void signal_handler(int signalVal) {
 
         printf(ANSI_COLOR_RED "\n==================== FINE SIMULAZIONE ======================\n" ANSI_COLOR_RESET);
 
-        exit(EXIT_SUCCESS);
+
     }
 }
 
