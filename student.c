@@ -101,7 +101,6 @@ int main(int argc, char *argv[]) {
                         SH_INDEX.libero = FALSE;
 
 
-
                         for (int i = 0; i < SH_MITT.nof_elems; ++i) {
                             if (G_MITT_INDEX.compagni[i] == -1) {
                                 G_MITT_INDEX.compagni[i] = getpid();
@@ -172,9 +171,9 @@ int main(int argc, char *argv[]) {
                      */
                     if (flag_no_spam) {
 
-                          f = fopen("log.txt", "a");
-                             fprintf(f, "[%d] Invito -> [%d]\n", getpid(), SH_TO_INVITE.matricola);
-                             fclose(f);
+                        f = fopen("log.txt", "a");
+                        fprintf(f, "[%d] Invito -> [%d]\n", getpid(), SH_TO_INVITE.matricola);
+                        fclose(f);
 
                         for (int i = 0; i < 4; ++i) {
                             if (SH_INDEX.pid_invitato[i] == -1) {
@@ -208,10 +207,10 @@ int main(int argc, char *argv[]) {
             }
 
 
-            index_POPSIZE++;
-            if (index_POPSIZE == POP_SIZE) {
+            if (index_POPSIZE == POP_SIZE)
                 index_POPSIZE = 0;
-            }
+            else
+                index_POPSIZE++;
 
             releaseSem(1);
         }

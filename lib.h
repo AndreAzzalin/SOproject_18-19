@@ -33,7 +33,7 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 1000
+#define POP_SIZE 100
 #define SIM_TIME 5
 
 #define ID_KEY 'a'
