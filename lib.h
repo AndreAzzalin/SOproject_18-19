@@ -18,6 +18,9 @@
                            __FILE__, __LINE__, getpid(), errno, strerror(errno));}
 
 
+
+
+
 #define TRUE 1
 #define FALSE 0
 
@@ -33,20 +36,26 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 100
+#define POP_SIZE 10
 #define SIM_TIME 4
 
+//=== Keys ===
 #define ID_KEY 'a'
-#define KEY_PARI 2
 #define KEY_DISPARI 1
+#define KEY_PARI 2
+#define KEY 3
+#define KEY_ST 4
+#define KEY_GR 5
 
+
+//=== macro per indici ===
 #define INDEX getpid()%POP_SIZE
 #define INDEX_MITT msg_queue.student_mitt%POP_SIZE
-#define SH_INDEX shdata_pointer->students[INDEX]
-#define SH_TO_INVITE shdata_pointer->students[index_POPSIZE]
-#define SH_MITT shdata_pointer->students[INDEX_MITT]
-#define G_INDEX shdata_pointer->groups[INDEX]
-#define G_MITT_INDEX shdata_pointer->groups[INDEX_MITT]
+#define SH_INDEX sm_students_pointer->students[INDEX]
+#define SH_TO_INVITE sm_students_pointer->students[index_POPSIZE]
+#define SH_MITT sm_students_pointer->students[INDEX_MITT]
+#define G_INDEX sm_groups_pointer->groups[INDEX]
+#define G_MITT_INDEX sm_groups_pointer->groups[INDEX_MITT]
 
 
 //==== variabili processi ====
@@ -56,15 +65,22 @@ FILE *f;
 
 
 //==== variabili strutture ====
-key_t key;
+key_t key ;
+key_t key_sem_id;
 int sem_id;
+int sem_st, sem_gr;
 int shmem_id;
+
+int sm_students_id;
+int sm_groups_id;
 int msg_pari;
 int msg_dispari;
 
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
 struct shdata *shdata_pointer;
+struct sm_students *sm_students_pointer;
+struct sm_groups *sm_groups_pointer;
 
 
 struct my_msg {
@@ -83,9 +99,9 @@ union semun {
 
 //==== FUNZIONI UTIL ====//
 
-key_t setKey() {
+key_t setKey(char id) {
     key_t newKey;
-    if ((newKey = ftok(".", ID_KEY)) == (key_t) -1) {
+    if ((newKey = ftok(".", id)) == (key_t) -1) {
         TEST_ERROR
     }
     return newKey;
@@ -137,18 +153,14 @@ int *read_config() {
     int nof_invites = getConfigValue(nof_invites_toConvert);
     int max_reject = getConfigValue(max_reject_toConvert);
 
-    TEST_ERROR
     fclose(f);
 
-
     static int configVariables[5];
-
     configVariables[0] = nof_elems2;
     configVariables[1] = nof_elems3;
     configVariables[2] = nof_elems4;
     configVariables[3] = nof_invites;
     configVariables[4] = max_reject;
-
 
     return configVariables;
 }
@@ -158,7 +170,7 @@ int *read_config() {
 //==== OPERAZIONI SEMAFORI ====//
 
 //blocca risorsa x
-int reserveSem(int semNum) {
+int reserveSem(int sem_id, int semNum) {
     struct sembuf sops;
     sops.sem_num = semNum;
     sops.sem_op = -1;
@@ -168,7 +180,7 @@ int reserveSem(int semNum) {
 }
 
 //rilascia risorsa x
-int releaseSem(int semNum) {
+int releaseSem(int sem_id, int semNum) {
     struct sembuf sops;
     sops.sem_num = semNum;
     sops.sem_op = 1;
@@ -176,7 +188,7 @@ int releaseSem(int semNum) {
     return semop(sem_id, &sops, 1);
 }
 
-int getSemVal(int semNum) {
+int getSemVal(int sem_id,int semNum) {
     union semun arg;
     return semctl(sem_id, semNum, GETVAL, arg);
 }
@@ -214,9 +226,15 @@ struct gruppo {
 };
 
 struct shdata {
-    struct student students[POP_SIZE];
-    struct gruppo groups[POP_SIZE];
     int config_values[5];
+};
+
+struct sm_students{
+    struct student students[POP_SIZE];
+};
+
+struct sm_groups{
+    struct gruppo groups[POP_SIZE];
 };
 
 

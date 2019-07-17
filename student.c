@@ -16,18 +16,23 @@ int main(int argc, char *argv[]) {
     init();
     TEST_ERROR
 
-    while (TRUE) {
+    while (FALSE) {
 
         //uso il sem0 per capire quando tutti i processi sono stati caricati
-        if (!getSemVal(0)) {
-
+        if (!getSemVal(sem_id, 0)) {
 
             //se nella coda di messaggi ci sono msg con mtype = al mio pid, leggo il messaggio
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
                    sizeof(msg_queue) - sizeof(long)) {
 
 
-                reserveSem(1);
+                reserveSem(sem_id, 1);
+                // reserveSem(sem_st, INDEX);
+
+                //printf("[%d] sem val %d index %d\n",getpid(),getSemVal(sem_st,INDEX), INDEX);
+
+
+
 
 
                 if (!SH_INDEX.libero) {
@@ -75,6 +80,7 @@ int main(int argc, char *argv[]) {
 
                         SH_MITT.libero = FALSE;
                         SH_INDEX.libero = FALSE;
+
 
                         G_MITT_INDEX.compagni[0] = SH_MITT.matricola;
                         G_MITT_INDEX.compagni[1] = getpid();
@@ -128,8 +134,14 @@ int main(int argc, char *argv[]) {
                     SH_INDEX.nof_reject--;
                 }
 
-                releaseSem(1);
+
+
+                //releaseSem(sem_st, INDEX);
+                releaseSem(sem_id, 1);
+
+
             }
+
 
 
             /*
@@ -139,7 +151,9 @@ int main(int argc, char *argv[]) {
              */
 
 
-            reserveSem(1);
+
+
+            reserveSem(sem_id, 1);
 
             flag_no_spam = TRUE;
 
@@ -212,7 +226,9 @@ int main(int argc, char *argv[]) {
             else
                 index_POPSIZE++;
 
-            releaseSem(1);
+            // printf("n sem %d  %d\n",SH_INDEX.matricola%POP_SIZE,index_POPSIZE);
+
+            releaseSem(sem_id, 1);
         }
     }
 }
@@ -220,15 +236,22 @@ int main(int argc, char *argv[]) {
 
 void init() {
 
-
     //per random
     srand(getpid());
 
     //mi allaccio alle strutture IPC
-    key = setKey();
-    sem_id = semget(key, 2, IPC_CREAT | 0666);
-    shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
+    sem_id = semget(KEY, 2, IPC_CREAT | 0666);
+    sem_st = semget(KEY_ST, POP_SIZE, IPC_CREAT | 0666);
+    sem_gr = semget(KEY_GR, POP_SIZE, IPC_CREAT | 0666);
+
+    shmem_id = shmget(KEY, sizeof(struct shdata), IPC_CREAT | 0666);
     shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
+
+    sm_students_id = shmget(KEY_ST, sizeof(struct sm_students), IPC_CREAT | 0666);
+    sm_students_pointer = (struct sm_students *) shmat(sm_students_id, NULL, 0);
+
+    sm_groups_id = shmget(KEY_ST, sizeof(struct sm_groups), IPC_CREAT | 0666);
+    sm_groups_pointer = (struct sm_groups *) shmat(sm_groups_id, NULL, 0);
 
     my_msg_queue = getMsgQueue();
 
@@ -236,13 +259,24 @@ void init() {
     TEST_ERROR
 
 
+
     //inizializzo le variabili che caratterizzano uno studente
-    reserveSem(1);
+
+    reserveSem(sem_id, 1);
 
     my_nof_elems = getNof_elems();
     my_voto_AdE = getVoto();
-
     nof_invites = shdata_pointer->config_values[3];
+    int nof_reject = shdata_pointer->config_values[4];
+
+
+
+
+
+
+    //  reserveSem(sem_st, INDEX);
+
+    //  printf("[%d] sem val %d index %d\n",getpid(),getSemVal(sem_st,INDEX), INDEX);
 
 
     SH_INDEX.matricola = getpid();
@@ -251,13 +285,20 @@ void init() {
     SH_INDEX.voto_SO = 0;
     SH_INDEX.libero = TRUE;
 
-
     SH_INDEX.nof_invites_send = nof_invites;
-    SH_INDEX.nof_reject = shdata_pointer->config_values[4];
+    SH_INDEX.nof_reject = nof_reject;
 
     for (int i = 0; i < nof_invites; ++i) {
         SH_INDEX.pid_invitato[i] = -1;
     }
+
+    // releaseSem(sem_st, INDEX);
+
+    TEST_ERROR
+
+
+
+    // reserveSem(sem_gr, INDEX);
 
     for (int j = 0; j < POP_SIZE; ++j) {
         G_INDEX.chiuso = FALSE;
@@ -266,9 +307,12 @@ void init() {
         }
     }
 
+    // releaseSem(sem_gr, INDEX);
 
-    reserveSem(0);
-    releaseSem(1);
+
+    //decremento sem0
+    releaseSem(sem_id, 1);
+    reserveSem(sem_id, 0);
 
     //punto alla funzione che gestirà il segnale
     sa.sa_handler = &signal_handler;
@@ -299,10 +343,14 @@ void signal_handler(int signalVal) {
 
         //stacco frammento di memoria da processo
         shmdt(shdata_pointer);
+        shmdt(sm_students_pointer);
+        shmdt(sm_groups_pointer);
 
         msgctl(my_msg_queue, IPC_RMID, NULL);
 
         shmctl(shmem_id, IPC_RMID, NULL);
+        shmctl(sm_students_id, IPC_RMID, NULL);
+        shmctl(sm_groups_id, IPC_RMID, NULL);
 
         exit(EXIT_SUCCESS);
 

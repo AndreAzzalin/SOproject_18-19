@@ -40,7 +40,9 @@ int main(int argc, char *argv[]) {
            " - sh_id  = %d\n"
            " - msg_pari = %d\n"
            " - msg_dispari = %d\n"
-           " - sem_id = %d\n", shmem_id, msg_pari, msg_dispari, sem_id);
+           " - sem_id = %d\n"
+           " - sem_st = %d\n"
+           " - sem_gr = %d \n", shmem_id, msg_pari, msg_dispari, sem_id, sem_st, sem_gr);
 
 
     printf(ANSI_COLOR_BLUE "\n ===== CONFIG VAR ===== \n" ANSI_COLOR_RESET
@@ -54,7 +56,7 @@ int main(int argc, char *argv[]) {
            POP_SIZE, SIM_TIME, shdata_pointer->config_values[0], shdata_pointer->config_values[1],
            shdata_pointer->config_values[2],
            shdata_pointer->config_values[3], shdata_pointer->config_values[4]);
-    releaseSem(1);
+
 
     f = fopen("log.txt", "a");
     fprintf(f, "\n================ CARICAMENTO RISORSE COMPLETATO ===============\n"
@@ -80,7 +82,6 @@ int main(int argc, char *argv[]) {
     fprintf(f, "\n======= INIZIO SCAMBIO DI MESSAGGI STUDENTI =======\n");
     fclose(f);
 
-    reserveSem(1);
 
     for (int i = 0; i < POP_SIZE; i++) {
         switch (fork()) {
@@ -98,7 +99,7 @@ int main(int argc, char *argv[]) {
     //padre attende che tutti i figli terminino prima di terminare
     for (int i = 0; i < POP_SIZE; ++i) {
         int returnStatus;
-        waitpid(shdata_pointer->students[i].matricola, &returnStatus, 0);
+        waitpid(sm_students_pointer->students[i].matricola, &returnStatus, 0);
     }
 }
 
@@ -106,10 +107,10 @@ int main(int argc, char *argv[]) {
 void signal_handler(int signalVal) {
     if (signalVal == SIGALRM || signalVal == SIGINT) {
 
-        reserveSem(1);
+        reserveSem(sem_id, 1);
 
         //blocco l'attività di tutti i processi figli
-        releaseSem(0);
+        releaseSem(sem_id, 0);
 
 
         printf(ANSI_COLOR_RED "\n================ PADRE[%d] SIM TIME TERMINATO ===============\n" ANSI_COLOR_RESET,
@@ -125,40 +126,40 @@ void signal_handler(int signalVal) {
 
         for (int i = 0; i < POP_SIZE; ++i) {
             int voto_max = 0;
-            if (shdata_pointer->groups[i].compagni[0] > 0 && shdata_pointer->groups[i].chiuso) {
+            if (sm_groups_pointer->groups[i].compagni[0] > 0 && sm_groups_pointer->groups[i].chiuso) {
 
-                int pidCapo = shdata_pointer->groups[i].compagni[0];
+                int pidCapo = sm_groups_pointer->groups[i].compagni[0];
 
                 f = fopen("log.txt", "a");
                 fprintf(f, "LEADER[%d] n_elems %d | n_invites_send %d\n",
-                        shdata_pointer->groups[i].compagni[0],
-                        shdata_pointer->students[pidCapo % POP_SIZE].nof_elems,
-                        shdata_pointer->students[pidCapo % POP_SIZE].nof_invites_send);
+                        sm_groups_pointer->groups[i].compagni[0],
+                        sm_students_pointer->students[pidCapo % POP_SIZE].nof_elems,
+                        sm_students_pointer->students[pidCapo % POP_SIZE].nof_invites_send);
 
 
                 /*
                  * assegno voto di SO
                  */
                 for (int j = 0; j < 4; ++j) {
-                    if (shdata_pointer->groups[i].compagni[j] > 0) {
-                        int x = shdata_pointer->groups[i].compagni[j] % POP_SIZE;
+                    if (sm_groups_pointer->groups[i].compagni[j] > 0) {
+                        int x = sm_groups_pointer->groups[i].compagni[j] % POP_SIZE;
 
                         fprintf(f, "\t- Studente [%d] | voto_AdE: %d | nof_elems: %d\n",
-                                shdata_pointer->students[x].matricola,
-                                shdata_pointer->students[x].voto_AdE, shdata_pointer->students[x].nof_elems);
+                                sm_students_pointer->students[x].matricola,
+                                sm_students_pointer->students[x].voto_AdE, sm_students_pointer->students[x].nof_elems);
 
-                        if (voto_max < shdata_pointer->students[x].voto_AdE) {
-                            voto_max = shdata_pointer->students[x].voto_AdE;
+                        if (voto_max < sm_students_pointer->students[x].voto_AdE) {
+                            voto_max = sm_students_pointer->students[x].voto_AdE;
                         }
-                        shdata_pointer->groups[i].voto = voto_max;
+                        sm_groups_pointer->groups[i].voto = voto_max;
                     }
                 }
 
 
                 for (int z = 0; z < 4; ++z) {
-                    if (shdata_pointer->groups[i].compagni[z] > 0) {
-                        int x = shdata_pointer->groups[i].compagni[z] % POP_SIZE;
-                        shdata_pointer->students[x].voto_SO = shdata_pointer->groups[i].voto;
+                    if (sm_groups_pointer->groups[i].compagni[z] > 0) {
+                        int x = sm_groups_pointer->groups[i].compagni[z] % POP_SIZE;
+                        sm_students_pointer->students[x].voto_SO = sm_groups_pointer->groups[i].voto;
                     }
                 }
 
@@ -173,15 +174,12 @@ void signal_handler(int signalVal) {
         fclose(f);
 
         for (int j = 0; j < POP_SIZE; ++j) {
+            kill(sm_students_pointer->students[j].matricola, SIGINT);
+        }
 
-            kill(shdata_pointer->students[j].matricola, SIGINT);
-
-            //aspetto che il figlio gestisca il segnale
-            pid_t child = wait(&status);
-
-            if (child > 0 || WIFEXITED(status) || WEXITSTATUS(status)) {
-                TEST_ERROR
-            }
+        for (int i = 0; i < POP_SIZE; ++i) {
+            int returnStatus;
+            waitpid(sm_students_pointer->students[i].matricola, &returnStatus, 0);
         }
 
 
@@ -195,7 +193,7 @@ void signal_handler(int signalVal) {
         for (int j = 18; j <= 30; j++) {
             cont = 0;
             for (int i = 0; i < POP_SIZE; ++i) {
-                if (shdata_pointer->students[i].voto_AdE == j) {
+                if (sm_students_pointer->students[i].voto_AdE == j) {
                     cont++;
                 }
             }
@@ -204,7 +202,7 @@ void signal_handler(int signalVal) {
         }
 
         for (int l = 0; l < POP_SIZE; ++l) {
-            SUM_voto_AdE += shdata_pointer->students[l].voto_AdE;
+            SUM_voto_AdE += sm_students_pointer->students[l].voto_AdE;
         }
         printf("\nMedia dei voti:%.2lf\n", (double) SUM_voto_AdE / POP_SIZE);
 
@@ -218,7 +216,7 @@ void signal_handler(int signalVal) {
         for (int j = 18; j <= 30; j++) {
             cont = 0;
             for (int i = 0; i < POP_SIZE; ++i) {
-                if (shdata_pointer->students[i].voto_SO == j) {
+                if (sm_students_pointer->students[i].voto_SO == j) {
                     cont++;
                 }
             }
@@ -229,18 +227,22 @@ void signal_handler(int signalVal) {
         int SUM_voto_SO = 0;
         int promossiSO = 0;
         for (int l = 0; l < POP_SIZE; ++l) {
-            if (shdata_pointer->students[l].voto_SO > 0) {
-                SUM_voto_SO += shdata_pointer->students[l].voto_SO;
+            if (sm_students_pointer->students[l].voto_SO > 0) {
+                SUM_voto_SO += sm_students_pointer->students[l].voto_SO;
                 promossiSO++;
             }
         }
 
         printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
 
-        releaseSem(1);
+        releaseSem(sem_id, 1);
 
+        shmctl(sm_students_id, IPC_RMID, NULL);
+        shmctl(sm_groups_id, IPC_RMID, NULL);
 
-        if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(shmem_id, IPC_RMID, NULL)) {
+        if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(shmem_id, IPC_RMID, NULL) && !semctl(sem_st, POP_SIZE, IPC_RMID) &&
+            !semctl(sem_gr, POP_SIZE, IPC_RMID)) {
+
             printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
         } else {
             TEST_ERROR
@@ -259,25 +261,36 @@ void signal_handler(int signalVal) {
 void init() {
 
 
-    key = setKey();
+    sem_id = semget(KEY, 2, IPC_CREAT | 0666);
+    sem_st = semget(KEY_ST, POP_SIZE, IPC_CREAT | 0666);
+    sem_gr = semget(KEY_GR, POP_SIZE, IPC_CREAT | 0666);
 
-    //creo set di 2 semafori
-    // uno per sh_data e uno per
-    sem_id = semget(key, 2, IPC_CREAT | 0666);
-    shmem_id = shmget(key, sizeof(struct shdata), IPC_CREAT | 0666);
+    shmem_id = shmget(KEY, sizeof(struct shdata), IPC_CREAT | 0666);
     shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
+
+    sm_students_id = shmget(KEY_ST, sizeof(struct sm_students), IPC_CREAT | 0666);
+    sm_students_pointer = (struct sm_students *) shmat(sm_students_id, NULL, 0);
+
+    sm_groups_id = shmget(KEY_ST, sizeof(struct sm_groups), IPC_CREAT | 0666);
+    sm_groups_pointer = (struct sm_groups *) shmat(sm_groups_id, NULL, 0);
 
     msg_pari = msgget(KEY_PARI, IPC_CREAT | 0666);
     msg_dispari = msgget(KEY_DISPARI, IPC_CREAT | 0666);
 
     //mi accerto che le IPC siano state create
-    if (sem_id == -1 || shmem_id == -1 || msg_pari == -1 || msg_dispari == -1) {
+    if (sem_id == -1 || shmem_id == -1 || msg_pari == -1 || msg_dispari == -1 || sem_st == -1 || sem_gr == -1) {
         TEST_ERROR
     }
 
 
     semctl(sem_id, 0, SETVAL, POP_SIZE);
-    semctl(sem_id, 1, SETVAL, 1);
+    initSemAvailable(sem_id,1);
+
+    for (int j = 0; j <POP_SIZE; ++j) {
+        initSemAvailable(sem_st,j);
+        initSemAvailable(sem_gr,j);
+
+    }
 
 
     //leggo e salvo le variabili di configurazione su sm
@@ -293,15 +306,15 @@ void init() {
     sa.sa_handler = &signal_handler;
     //installo handler e controllo errore
     sigaction(SIGALRM, &sa, &sa_old);
+    //sigaction(SIGINT, &sa, &sa_old);
     TEST_ERROR
 
     start_sim_time();
-
-
 }
 
 void start_sim_time() {
-    int length = sizeof(shdata_pointer->students) / sizeof(shdata_pointer->students[0]);
+    //usare sem0
+    int length = sizeof(sm_students_pointer->students) / sizeof(sm_students_pointer->students[0]);
     if (length == POP_SIZE) {
         alarm(SIM_TIME);
     }
