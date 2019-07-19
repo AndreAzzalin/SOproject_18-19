@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 void signal_handler(int signalVal) {
     if (signalVal == SIGALRM || signalVal == SIGINT) {
 
-        reserveSem(sem_id, 1);
+      //  reserveSem(sem_id, 1);
 
         //blocco l'attività di tutti i processi figli
         releaseSem(sem_id, 0);
@@ -175,12 +175,11 @@ void signal_handler(int signalVal) {
 
         for (int j = 0; j < POP_SIZE; ++j) {
             kill(sm_students_pointer->students[j].matricola, SIGINT);
+
+            int returnStatus;
+            waitpid(sm_students_pointer->students[j].matricola, &returnStatus, 0);
         }
 
-        for (int i = 0; i < POP_SIZE; ++i) {
-            int returnStatus;
-            waitpid(sm_students_pointer->students[i].matricola, &returnStatus, 0);
-        }
 
 
         printf(ANSI_COLOR_RED"\n==================== DEBRIEF SIMULAZIONE ====================\n" ANSI_COLOR_RESET);
@@ -235,7 +234,7 @@ void signal_handler(int signalVal) {
 
         printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
 
-        releaseSem(sem_id, 1);
+       // releaseSem(sem_id, 1);
 
         shmctl(sm_students_id, IPC_RMID, NULL);
         shmctl(sm_groups_id, IPC_RMID, NULL);
@@ -271,7 +270,7 @@ void init() {
     sm_students_id = shmget(KEY_ST, sizeof(struct sm_students), IPC_CREAT | 0666);
     sm_students_pointer = (struct sm_students *) shmat(sm_students_id, NULL, 0);
 
-    sm_groups_id = shmget(KEY_ST, sizeof(struct sm_groups), IPC_CREAT | 0666);
+    sm_groups_id = shmget(KEY_GR, sizeof(struct sm_groups), IPC_CREAT | 0666);
     sm_groups_pointer = (struct sm_groups *) shmat(sm_groups_id, NULL, 0);
 
     msg_pari = msgget(KEY_PARI, IPC_CREAT | 0666);
