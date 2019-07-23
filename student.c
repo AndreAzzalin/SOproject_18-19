@@ -9,6 +9,8 @@ int my_msg_queue;
 int flag_no_spam = TRUE;
 int index_POPSIZE = 0;
 
+pid_t wpid;
+
 
 int main(int argc, char *argv[]) {
 
@@ -26,10 +28,10 @@ int main(int argc, char *argv[]) {
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
                    sizeof(msg_queue) - sizeof(long)) {
 
-                f = fopen("log.txt", "a");
+                /*  f = fopen("log.txt", "a");
 
-                fprintf(f, "[%d] RIC sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
-                fclose(f);
+                  fprintf(f, "[%d] RIC sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
+                  fclose(f);*/
 
 
                 // reserveSem(sem_id, 1);
@@ -68,9 +70,10 @@ int main(int argc, char *argv[]) {
                      * se è il primo
                      */
 
-                    f = fopen("log.txt", "a");
-                    fprintf(f, "[%d] Accetto -> [%d]\n", getpid(), SH_MITT.matricola);
-                    fclose(f);
+
+                    /*   f = fopen("log.txt", "a");
+                       fprintf(f, "[%d] Accetto -> [%d]\n", getpid(), SH_MITT.matricola);
+                       fclose(f);*/
 
                     /*
                      * faccio creare il gruppo se sono il primo ad accettare
@@ -91,10 +94,10 @@ int main(int argc, char *argv[]) {
                             G_MITT_INDEX.chiuso = TRUE;
                         }
 
-                        f = fopen("log.txt", "a");
+                        /*    f = fopen("log.txt", "a");
 
-                        fprintf(f, "[%d] Creato gruppo capo -> [%d]\n", getpid(), SH_MITT.matricola);
-                        fclose(f);
+                            fprintf(f, "[%d] Creato gruppo capo -> [%d]\n", getpid(), SH_MITT.matricola);
+                            fclose(f);*/
 
 
                     } else if ((G_MITT_INDEX.compagni[0] == SH_MITT.matricola) && (G_MITT_INDEX.chiuso == FALSE)) {
@@ -125,9 +128,9 @@ int main(int argc, char *argv[]) {
                      * rifiuto per incompatibilità
                      */
 
-                    f = fopen("log.txt", "a");
-                    fprintf(f, "[%d] Rifiuto -> [%d]\n", getpid(), SH_MITT.matricola);
-                    fclose(f);
+                    /*    f = fopen("log.txt", "a");
+                        fprintf(f, "[%d] Rifiuto -> [%d]\n", getpid(), SH_MITT.matricola);
+                        fclose(f);*/
 
 
                     SH_INDEX.nof_reject--;
@@ -151,9 +154,9 @@ int main(int argc, char *argv[]) {
              */
 
 
-            f = fopen("log.txt", "a");
-            fprintf(f, "[%d] INV sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
-            fclose(f);
+            /*   f = fopen("log.txt", "a");
+               fprintf(f, "[%d] INV sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
+               fclose(f);*/
 
             // reserveSem(sem_id, 1);
 
@@ -193,9 +196,9 @@ int main(int argc, char *argv[]) {
                          */
                         if (flag_no_spam) {
 
-                            f = fopen("log.txt", "a");
-                            fprintf(f, "[%d] Invito -> [%d]\n", getpid(), SH_TO_INVITE.matricola);
-                            fclose(f);
+                            /*    f = fopen("log.txt", "a");
+                                fprintf(f, "[%d] Invito -> [%d]\n", getpid(), SH_TO_INVITE.matricola);
+                                fclose(f);*/
 
                             for (int i = 0; i < 4; ++i) {
                                 if (SH_INDEX.pid_invitato[i] == -1) {
@@ -265,26 +268,18 @@ void init() {
 
     my_msg_queue = getMsgQueue();
 
-
     TEST_ERROR
-
-
 
     //inizializzo le variabili che caratterizzano uno studente
 
-    reserveSem(sem_id, 1);
+    reserveSem(sem_st, INDEX);
 
+    reserveSem(sem_id, 1);
     my_nof_elems = getNof_elems();
     my_voto_AdE = getVoto();
     nof_invites = shdata_pointer->config_values[3];
     int nof_reject = shdata_pointer->config_values[4];
-
     releaseSem(sem_id, 1);
-
-
-    reserveSem(sem_st, INDEX);
-
-    //  printf("[%d] sem val %d index %d\n",getpid(),getSemVal(sem_st,INDEX), INDEX);
 
 
     SH_INDEX.matricola = getpid();
@@ -324,20 +319,26 @@ void init() {
 void signal_handler(int signalVal) {
     if (signalVal == SIGINT) {
 
+        // reserveSem(sem_st, INDEX);
+        reserveSem(sem_id, 1);
+
+
         if (SH_INDEX.voto_SO > 0) {
-            f = fopen("log.txt", "a");
-            fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
-            fclose(f);
+             /* f = fopen("log.txt", "a");
+                fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+                fclose(f);*/
 
             printf("STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
         } else {
-            f = fopen("log.txt", "a");
-            fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO\n", SH_INDEX.matricola);
-            fclose(f);
+             /*f = fopen("log.txt", "a");
+              fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO\n", SH_INDEX.matricola);
+              fclose(f);*/
 
             printf("STUDENTE[%d] voto Sistemi Operativi: BOCCIATO \n", SH_INDEX.matricola);
         }
 
+        releaseSem(sem_id, 1);
+        //  releaseSem(sem_st, INDEX);
 
 
         //stacco frammento di memoria da processo
@@ -345,13 +346,13 @@ void signal_handler(int signalVal) {
         shmdt(sm_students_pointer);
         shmdt(sm_groups_pointer);
 
-        msgctl(my_msg_queue, IPC_RMID, NULL);
+        // msgctl(my_msg_queue, IPC_RMID, NULL);
 
         //shmctl(shmem_id, IPC_RMID, NULL);
         //shmctl(sm_students_id, IPC_RMID, NULL);
         //shmctl(sm_groups_id, IPC_RMID, NULL);
 
-        exit(EXIT_SUCCESS);
+        exit(0);
     }
 }
 

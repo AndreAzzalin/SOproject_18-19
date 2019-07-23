@@ -3,6 +3,8 @@
 
 int cont, SUM_voto_AdE = 0;
 
+pid_t wpid;
+
 
 int main(int argc, char *argv[]) {
 
@@ -86,7 +88,6 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < POP_SIZE; i++) {
         switch (fork()) {
             case -1:
-                TEST_ERROR;
                 break;
             case 0:
                 execve("student", arg_null, arg_null);
@@ -97,20 +98,24 @@ int main(int argc, char *argv[]) {
     printf(ANSI_COLOR_YELLOW"\n===================== CREAZIONE GRUPPI... =====================\n"ANSI_COLOR_RESET);
 
     //padre attende che tutti i figli terminino prima di terminare
-    for (int i = 0; i < POP_SIZE; ++i) {
-        int returnStatus;
-        waitpid(sm_students_pointer->students[i].matricola, &returnStatus, 0);
+    for (int j = 0; j < POP_SIZE; ++j) {
+        int retStatus;
+        waitpid(sm_students_pointer->students[j].matricola, &retStatus, 0);
     }
+
 }
 
 
 void signal_handler(int signalVal) {
-    if (signalVal == SIGALRM || signalVal == SIGINT) {
+    if (signalVal == SIGALRM) {
 
-      //  reserveSem(sem_id, 1);
-
+        //  reserveSem(sem_id, 1);
         //blocco l'attività di tutti i processi figli
         releaseSem(sem_id, 0);
+
+        for (int j = 0; j < POP_SIZE; ++j) {
+            initSemInUse(sem_st, j);
+        }
 
 
         printf(ANSI_COLOR_RED "\n================ PADRE[%d] SIM TIME TERMINATO ===============\n" ANSI_COLOR_RESET,
@@ -119,10 +124,11 @@ void signal_handler(int signalVal) {
 
         printf(ANSI_COLOR_YELLOW "\n====== GUARDARE IL FILE DI LOG PER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
 
-
+        reserveSem(sem_id, 1);
         f = fopen("log.txt", "a");
         fprintf(f, "\n============== ELENCO GRUPPI CREATI ===========\n\n");
         fclose(f);
+
 
         for (int i = 0; i < POP_SIZE; ++i) {
             int voto_max = 0;
@@ -130,12 +136,11 @@ void signal_handler(int signalVal) {
 
                 int pidCapo = sm_groups_pointer->groups[i].compagni[0];
 
-                f = fopen("log.txt", "a");
-                fprintf(f, "LEADER[%d] n_elems %d | n_invites_send %d\n",
-                        sm_groups_pointer->groups[i].compagni[0],
-                        sm_students_pointer->students[pidCapo % POP_SIZE].nof_elems,
-                        sm_students_pointer->students[pidCapo % POP_SIZE].nof_invites_send);
-
+                /*    f = fopen("log.txt", "a");
+                    fprintf(f, "LEADER[%d] n_elems %d | n_invites_send %d\n",
+                            sm_groups_pointer->groups[i].compagni[0],
+                            sm_students_pointer->students[pidCapo % POP_SIZE].nof_elems,
+                            sm_students_pointer->students[pidCapo % POP_SIZE].nof_invites_send);*/
 
                 /*
                  * assegno voto di SO
@@ -144,9 +149,9 @@ void signal_handler(int signalVal) {
                     if (sm_groups_pointer->groups[i].compagni[j] > 0) {
                         int x = sm_groups_pointer->groups[i].compagni[j] % POP_SIZE;
 
-                        fprintf(f, "\t- Studente [%d] | voto_AdE: %d | nof_elems: %d\n",
+                        /*fprintf(f, "\t- Studente [%d] | voto_AdE: %d | nof_elems: %d\n",
                                 sm_students_pointer->students[x].matricola,
-                                sm_students_pointer->students[x].voto_AdE, sm_students_pointer->students[x].nof_elems);
+                                sm_students_pointer->students[x].voto_AdE, sm_students_pointer->students[x].nof_elems);*/
 
                         if (voto_max < sm_students_pointer->students[x].voto_AdE) {
                             voto_max = sm_students_pointer->students[x].voto_AdE;
@@ -163,23 +168,35 @@ void signal_handler(int signalVal) {
                     }
                 }
 
-                fclose(f);
+                // fclose(f);
             }
         }
 
         printf("\n");
 
-        f = fopen("log.txt", "a");
-        fprintf(f, "\n============== ELENCO VOTI STUDENTI ===========\n\n");
-        fclose(f);
+        /*   f = fopen("log.txt", "a");
+            fprintf(f, "\n============== ELENCO VOTI STUDENTI ===========\n\n");
+            fclose(f);*/
+
+        releaseSem(sem_id, 1);
 
         for (int j = 0; j < POP_SIZE; ++j) {
+
             kill(sm_students_pointer->students[j].matricola, SIGINT);
 
-            int returnStatus;
-            waitpid(sm_students_pointer->students[j].matricola, &returnStatus, 0);
+
+            int retStatus;
+            waitpid(sm_students_pointer->students[j].matricola, &retStatus, 0);
+         //   printf("pid %d status %d j %d\n", sm_students_pointer->students[j].matricola, retStatus, j);
+
         }
 
+        for (int j = 0; j < POP_SIZE; ++j) {
+
+            int retStatus;
+            waitpid(sm_students_pointer->students[j].matricola, &retStatus, 0);
+            printf("pid %d status %d j %d\n", sm_students_pointer->students[j].matricola, retStatus, j);
+        }
 
 
         printf(ANSI_COLOR_RED"\n==================== DEBRIEF SIMULAZIONE ====================\n" ANSI_COLOR_RESET);
@@ -234,10 +251,11 @@ void signal_handler(int signalVal) {
 
         printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
 
-       // releaseSem(sem_id, 1);
+        // releaseSem(sem_id, 1);
 
         shmctl(sm_students_id, IPC_RMID, NULL);
         shmctl(sm_groups_id, IPC_RMID, NULL);
+
 
         if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(shmem_id, IPC_RMID, NULL) && !semctl(sem_st, POP_SIZE, IPC_RMID) &&
             !semctl(sem_gr, POP_SIZE, IPC_RMID)) {
@@ -247,11 +265,13 @@ void signal_handler(int signalVal) {
             TEST_ERROR
         }
 
-        f = fopen("log.txt", "a");
-        fprintf(f, "\n============== FINE SIMULAZIONE ===========\n\n");
-        fclose(f);
+        /* f = fopen("log.txt", "a");
+         fprintf(f, "\n============== FINE SIMULAZIONE ===========\n\n");
+         fclose(f);*/
+
 
         printf(ANSI_COLOR_RED "\n==================== FINE SIMULAZIONE ======================\n" ANSI_COLOR_RESET);
+        // exit(EXIT_SUCCESS);
 
 
     }
@@ -283,11 +303,11 @@ void init() {
 
 
     semctl(sem_id, 0, SETVAL, POP_SIZE);
-    initSemAvailable(sem_id,1);
+    initSemAvailable(sem_id, 1);
 
-    for (int j = 0; j <POP_SIZE; ++j) {
-        initSemAvailable(sem_st,j);
-        initSemAvailable(sem_gr,j);
+    for (int j = 0; j < POP_SIZE; ++j) {
+        initSemAvailable(sem_st, j);
+        initSemAvailable(sem_gr, j);
 
     }
 
@@ -312,7 +332,6 @@ void init() {
 }
 
 void start_sim_time() {
-    //usare sem0
     int length = sizeof(sm_students_pointer->students) / sizeof(sm_students_pointer->students[0]);
     if (length == POP_SIZE) {
         alarm(SIM_TIME);
