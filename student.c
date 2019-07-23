@@ -26,6 +26,11 @@ int main(int argc, char *argv[]) {
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
                    sizeof(msg_queue) - sizeof(long)) {
 
+                f = fopen("log.txt", "a");
+
+                fprintf(f, "[%d] RIC sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
+                fclose(f);
+
 
                 // reserveSem(sem_id, 1);
                 reserveSem(sem_st, INDEX);
@@ -146,15 +151,16 @@ int main(int argc, char *argv[]) {
              */
 
 
-
+            f = fopen("log.txt", "a");
+            fprintf(f, "[%d] INV sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
+            fclose(f);
 
             // reserveSem(sem_id, 1);
-
 
             if (index_POPSIZE != INDEX && getSemVal(sem_st, INDEX) > 0 && getSemVal(sem_st, index_POPSIZE) > 0) {
 
                 reserveSem(sem_st, INDEX);
-                reserveSem(sem_st, index_POPSIZE);
+
 
                 flag_no_spam = TRUE;
 
@@ -166,6 +172,7 @@ int main(int argc, char *argv[]) {
                 if ((SH_INDEX.nof_invites_send > 0 && SH_INDEX.libero) ||
                     (G_INDEX.compagni[0] == getpid() && G_INDEX.chiuso == FALSE && SH_INDEX.nof_invites_send > 0)) {
 
+                    reserveSem(sem_st, index_POPSIZE);
 
                     //cerco studenti compatibili
                     if (checkPariDispari(SH_TO_INVITE.matricola) && SH_TO_INVITE.libero &&
@@ -206,6 +213,8 @@ int main(int argc, char *argv[]) {
                         }
                     }
 
+                    releaseSem(sem_st, index_POPSIZE);
+
                 } else if (SH_INDEX.libero && SH_INDEX.nof_invites_send <= 0 && SH_INDEX.nof_reject <= 0) {
                     /*
                      * se ho finito gli inviti, non sono ancora in nessnu gruppo
@@ -221,7 +230,7 @@ int main(int argc, char *argv[]) {
 
 
                 releaseSem(sem_st, INDEX);
-                releaseSem(sem_st, index_POPSIZE);
+
 
                 index_POPSIZE++;
             } else {
