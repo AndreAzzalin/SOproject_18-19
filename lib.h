@@ -13,9 +13,9 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 
-#define TEST_ERROR if(errno){\
-        dprintf(STDERR_FILENO,"%s:%d: PID=%5d: Error %d (%s)\n", \
-                           __FILE__, __LINE__, getpid(), errno, strerror(errno));}
+#define TEST_ERROR(x) \
+perror("[%d] x Errore %d (%s)\n", \
+                          getpid(), errno, strerror(errno));
 
 
 #define TRUE 1
@@ -31,8 +31,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 1000
-#define SIM_TIME 15
+#define POP_SIZE 100
+#define SIM_TIME 1
 
 //=== Keys ===
 #define KEY_DISPARI 1
@@ -59,11 +59,10 @@ FILE *f;
 
 //==== variabili strutture ====
 int sem_id;
-int sem_st, sem_gr;
+int sem_st;
 int sm_configValues_id;
 
 int sm_students_id;
-int sm_groups_id;
 int msg_pari;
 int msg_dispari;
 
@@ -71,7 +70,6 @@ struct sigaction sa, sa_old;
 struct my_msg msg_queue;
 struct sm_configValues *sm_configValues_pointer;
 struct sm_students *sm_students_pointer;
-
 
 
 struct my_msg {

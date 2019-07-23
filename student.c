@@ -9,7 +9,6 @@ int my_msg_queue;
 int flag_no_spam = TRUE;
 int index_POPSIZE = 0;
 
-pid_t wpid;
 
 
 int main(int argc, char *argv[]) {

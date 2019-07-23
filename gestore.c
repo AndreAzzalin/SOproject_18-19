@@ -251,13 +251,10 @@ void signal_handler(int signalVal) {
         printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
 
 
-        shmctl(sm_students_id, IPC_RMID, NULL);
-        shmctl(sm_groups_id, IPC_RMID, NULL);
-
-
-        if (!semctl(sem_id, 2, IPC_RMID) && !shmctl(sm_configValues_id, IPC_RMID, NULL) &&
-            !semctl(sem_st, POP_SIZE, IPC_RMID) && !msgctl(msg_pari, IPC_RMID, NULL) &&
-            !msgctl(msg_dispari, IPC_RMID, NULL)) {
+        if (shmctl(sm_students_id, IPC_RMID, NULL) == -1 ||
+            shmctl(sm_configValues_id, IPC_RMID, NULL) == -1 || semctl(sem_id, 2, IPC_RMID) == -1 ||
+            semctl(sem_st, POP_SIZE, IPC_RMID) == -1 || msgctl(msg_pari, IPC_RMID, NULL) == -1 ||
+            msgctl(msg_dispari, IPC_RMID, NULL) == -1) {
 
             printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
         } else {
