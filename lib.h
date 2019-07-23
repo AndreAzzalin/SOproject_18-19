@@ -13,9 +13,10 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 
-#define TEST_ERROR(x) \
-perror("[%d] x Errore %d (%s)\n", \
-                          getpid(), errno, strerror(errno));
+
+//errno impostato di default a 0 quando vi è un eccezione il SO assegna a quest avariabile il codice di errore
+#define TEST_ERROR(x)  if(errno){\
+ printf("[%d] Errore %d (%s) -> %s\n",getpid(),errno, strerror(errno),x);};
 
 
 #define TRUE 1

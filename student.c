@@ -175,7 +175,8 @@ int main(int argc, char *argv[]) {
                             msg_queue.student_mitt = getpid();
 
                             if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
-                                TEST_ERROR
+                                TEST_ERROR("Invio invito")
+
                         }
                     }
 
@@ -226,7 +227,6 @@ void init() {
 
     my_msg_queue = getMsgQueue();
 
-    TEST_ERROR
 
     //inizializzo le variabili che caratterizzano uno studente
 
@@ -270,8 +270,8 @@ void init() {
     sa.sa_handler = &signal_handler;
     //installo handler e controllo errore
     sigaction(SIGINT, &sa, &sa_old);
-    TEST_ERROR
 
+    TEST_ERROR("Init student")
 }
 
 void signal_handler(int signalVal) {

@@ -193,7 +193,7 @@ void signal_handler(int signalVal) {
             pid_t child = wait(&status);
 
             if (child == -1) {
-                TEST_ERROR
+                TEST_ERROR("Kill processi")
             }
         }
 
@@ -258,7 +258,7 @@ void signal_handler(int signalVal) {
 
             printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
         } else {
-            TEST_ERROR
+            TEST_ERROR("Pulizia IPC")
         }
 
         f = fopen("log.txt", "a");
@@ -286,7 +286,7 @@ void init() {
 
     //mi accerto che le IPC siano state create
     if (sem_id == -1 || sm_configValues_id == -1 || msg_pari == -1 || msg_dispari == -1 || sem_st == -1) {
-        TEST_ERROR
+        TEST_ERROR("Creazione IPC")
     }
 
 
