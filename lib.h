@@ -18,9 +18,6 @@
                            __FILE__, __LINE__, getpid(), errno, strerror(errno));}
 
 
-
-
-
 #define TRUE 1
 #define FALSE 0
 
@@ -29,23 +26,19 @@
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
 #define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 00
-#define SIM_TIME 4
+#define POP_SIZE 1000
+#define SIM_TIME 15
 
 //=== Keys ===
-#define ID_KEY 'a'
 #define KEY_DISPARI 1
 #define KEY_PARI 2
 #define KEY 3
 #define KEY_ST 4
-#define KEY_GR 5
 
 
 //=== macro per indici ===
@@ -54,8 +47,8 @@
 #define SH_INDEX sm_students_pointer->students[INDEX]
 #define SH_TO_INVITE sm_students_pointer->students[index_POPSIZE]
 #define SH_MITT sm_students_pointer->students[INDEX_MITT]
-#define G_INDEX sm_groups_pointer->groups[INDEX]
-#define G_MITT_INDEX sm_groups_pointer->groups[INDEX_MITT]
+#define G_INDEX sm_students_pointer->groups[INDEX]
+#define G_MITT_INDEX sm_students_pointer->groups[INDEX_MITT]
 
 
 //==== variabili processi ====
@@ -65,11 +58,9 @@ FILE *f;
 
 
 //==== variabili strutture ====
-key_t key ;
-key_t key_sem_id;
 int sem_id;
 int sem_st, sem_gr;
-int shmem_id;
+int sm_configValues_id;
 
 int sm_students_id;
 int sm_groups_id;
@@ -78,9 +69,9 @@ int msg_dispari;
 
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
-struct shdata *shdata_pointer;
+struct sm_configValues *sm_configValues_pointer;
 struct sm_students *sm_students_pointer;
-struct sm_groups *sm_groups_pointer;
+
 
 
 struct my_msg {
@@ -99,14 +90,6 @@ union semun {
 
 //==== FUNZIONI UTIL ====//
 
-key_t setKey(char id) {
-    key_t newKey;
-    if ((newKey = ftok(".", id)) == (key_t) -1) {
-        TEST_ERROR
-    }
-    return newKey;
-}
-
 int getVoto() {
     return rand() % 13 + 18;
 }
@@ -118,17 +101,12 @@ int getPercentNof_elems(int percent, int nStudents) {
 
 int getConfigValue(char line[1]) {
     int value = 0;
-
-    /* get the first token */
     char *token = strtok(line, ":");
 
-    /* walk through other tokens */
     while (token != NULL) {
         value = atoi(token);
         token = strtok(NULL, line);
     }
-
-
     return value;
 }
 
@@ -188,7 +166,7 @@ int releaseSem(int sem_id, int semNum) {
     return semop(sem_id, &sops, 1);
 }
 
-int getSemVal(int sem_id,int semNum) {
+int getSemVal(int sem_id, int semNum) {
     union semun arg;
     return semctl(sem_id, semNum, GETVAL, arg);
 }
@@ -225,17 +203,16 @@ struct gruppo {
     int voto;
 };
 
-struct shdata {
+struct sm_configValues {
     int config_values[5];
 };
 
-struct sm_students{
-    struct student students[POP_SIZE];
-};
 
-struct sm_groups{
+struct sm_students {
+    struct student students[POP_SIZE];
     struct gruppo groups[POP_SIZE];
 };
+
 
 
 
@@ -247,16 +224,16 @@ void init();
 int getNof_elems() {
 
 //questo metodo è eseguito solo con lock del semaforo 1
-    if (shdata_pointer->config_values[0] > 0) {
-        shdata_pointer->config_values[0]--;
+    if (sm_configValues_pointer->config_values[0] > 0) {
+        sm_configValues_pointer->config_values[0]--;
         return 2;
 
-    } else if (shdata_pointer->config_values[1] > 0) {
-        shdata_pointer->config_values[1]--;
+    } else if (sm_configValues_pointer->config_values[1] > 0) {
+        sm_configValues_pointer->config_values[1]--;
         return 3;
 
-    } else if (shdata_pointer->config_values[2] > 0) {
-        shdata_pointer->config_values[2]--;
+    } else if (sm_configValues_pointer->config_values[2] > 0) {
+        sm_configValues_pointer->config_values[2]--;
         return 4;
     }
 

@@ -14,9 +14,7 @@ pid_t wpid;
 
 int main(int argc, char *argv[]) {
 
-
     init();
-    TEST_ERROR
 
     while (TRUE) {
 
@@ -28,17 +26,8 @@ int main(int argc, char *argv[]) {
             while (msgrcv(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), getpid(), IPC_NOWAIT) ==
                    sizeof(msg_queue) - sizeof(long)) {
 
-                /*  f = fopen("log.txt", "a");
-
-                  fprintf(f, "[%d] RIC sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
-                  fclose(f);*/
-
-
-                // reserveSem(sem_id, 1);
                 reserveSem(sem_st, INDEX);
                 reserveSem(sem_st, INDEX_MITT);
-                //printf("[%d] sem val %d index %d\n",getpid(),getSemVal(sem_st,INDEX), INDEX);
-
 
                 if (!SH_INDEX.libero) {
 
@@ -71,10 +60,6 @@ int main(int argc, char *argv[]) {
                      */
 
 
-                    /*   f = fopen("log.txt", "a");
-                       fprintf(f, "[%d] Accetto -> [%d]\n", getpid(), SH_MITT.matricola);
-                       fclose(f);*/
-
                     /*
                      * faccio creare il gruppo se sono il primo ad accettare
                      * se il gruppo già esiste ed è aperto mi inserisco
@@ -93,11 +78,6 @@ int main(int argc, char *argv[]) {
                         if (SH_MITT.nof_elems == 2) {
                             G_MITT_INDEX.chiuso = TRUE;
                         }
-
-                        /*    f = fopen("log.txt", "a");
-
-                            fprintf(f, "[%d] Creato gruppo capo -> [%d]\n", getpid(), SH_MITT.matricola);
-                            fclose(f);*/
 
 
                     } else if ((G_MITT_INDEX.compagni[0] == SH_MITT.matricola) && (G_MITT_INDEX.chiuso == FALSE)) {
@@ -128,9 +108,6 @@ int main(int argc, char *argv[]) {
                      * rifiuto per incompatibilità
                      */
 
-                    /*    f = fopen("log.txt", "a");
-                        fprintf(f, "[%d] Rifiuto -> [%d]\n", getpid(), SH_MITT.matricola);
-                        fclose(f);*/
 
 
                     SH_INDEX.nof_reject--;
@@ -140,12 +117,7 @@ int main(int argc, char *argv[]) {
                 releaseSem(sem_st, INDEX);
                 releaseSem(sem_st, INDEX_MITT);
 
-                //releaseSem(sem_id, 1);
-
-
             }
-
-
 
             /*
              *
@@ -154,11 +126,6 @@ int main(int argc, char *argv[]) {
              */
 
 
-            /*   f = fopen("log.txt", "a");
-               fprintf(f, "[%d] INV sem val -> %d\n", getpid(), getSemVal(sem_st, INDEX));
-               fclose(f);*/
-
-            // reserveSem(sem_id, 1);
 
             if (index_POPSIZE != INDEX && getSemVal(sem_st, INDEX) > 0 && getSemVal(sem_st, index_POPSIZE) > 0) {
 
@@ -196,9 +163,6 @@ int main(int argc, char *argv[]) {
                          */
                         if (flag_no_spam) {
 
-                            /*    f = fopen("log.txt", "a");
-                                fprintf(f, "[%d] Invito -> [%d]\n", getpid(), SH_TO_INVITE.matricola);
-                                fclose(f);*/
 
                             for (int i = 0; i < 4; ++i) {
                                 if (SH_INDEX.pid_invitato[i] == -1) {
@@ -231,9 +195,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
 
-
                 releaseSem(sem_st, INDEX);
-
 
                 index_POPSIZE++;
             } else {
@@ -253,18 +215,15 @@ void init() {
     srand(getpid());
 
     //mi allaccio alle strutture IPC
+
     sem_id = semget(KEY, 2, IPC_CREAT | 0666);
     sem_st = semget(KEY_ST, POP_SIZE, IPC_CREAT | 0666);
-    sem_gr = semget(KEY_GR, POP_SIZE, IPC_CREAT | 0666);
 
-    shmem_id = shmget(KEY, sizeof(struct shdata), IPC_CREAT | 0666);
-    shdata_pointer = (struct shdata *) shmat(shmem_id, NULL, 0);
+    sm_configValues_id = shmget(KEY, sizeof(struct sm_configValues), IPC_CREAT | 0666);
+    sm_configValues_pointer = (struct sm_configValues *) shmat(sm_configValues_id, NULL, 0);
 
     sm_students_id = shmget(KEY_ST, sizeof(struct sm_students), IPC_CREAT | 0666);
     sm_students_pointer = (struct sm_students *) shmat(sm_students_id, NULL, 0);
-
-    sm_groups_id = shmget(KEY_GR, sizeof(struct sm_groups), IPC_CREAT | 0666);
-    sm_groups_pointer = (struct sm_groups *) shmat(sm_groups_id, NULL, 0);
 
     my_msg_queue = getMsgQueue();
 
@@ -277,8 +236,8 @@ void init() {
     reserveSem(sem_id, 1);
     my_nof_elems = getNof_elems();
     my_voto_AdE = getVoto();
-    nof_invites = shdata_pointer->config_values[3];
-    int nof_reject = shdata_pointer->config_values[4];
+    nof_invites = sm_configValues_pointer->config_values[3];
+    int nof_reject = sm_configValues_pointer->config_values[4];
     releaseSem(sem_id, 1);
 
 
@@ -319,38 +278,15 @@ void init() {
 void signal_handler(int signalVal) {
     if (signalVal == SIGINT) {
 
-        // reserveSem(sem_st, INDEX);
-        reserveSem(sem_id, 1);
-
-
         if (SH_INDEX.voto_SO > 0) {
-             /* f = fopen("log.txt", "a");
-                fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
-                fclose(f);*/
-
             printf("STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
         } else {
-             /*f = fopen("log.txt", "a");
-              fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO\n", SH_INDEX.matricola);
-              fclose(f);*/
-
             printf("STUDENTE[%d] voto Sistemi Operativi: BOCCIATO \n", SH_INDEX.matricola);
         }
 
-        releaseSem(sem_id, 1);
-        //  releaseSem(sem_st, INDEX);
-
-
         //stacco frammento di memoria da processo
-        shmdt(shdata_pointer);
+        shmdt(sm_configValues_pointer);
         shmdt(sm_students_pointer);
-        shmdt(sm_groups_pointer);
-
-        // msgctl(my_msg_queue, IPC_RMID, NULL);
-
-        //shmctl(shmem_id, IPC_RMID, NULL);
-        //shmctl(sm_students_id, IPC_RMID, NULL);
-        //shmctl(sm_groups_id, IPC_RMID, NULL);
 
         exit(0);
     }
