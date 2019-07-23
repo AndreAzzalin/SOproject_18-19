@@ -192,7 +192,7 @@ void signal_handler(int signalVal) {
 
             pid_t child = wait(&status);
 
-            if (child == -1) {
+            if (child == -1 && !WIFEXITED(status)) {
                 TEST_ERROR("Kill processi")
             }
         }

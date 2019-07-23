@@ -32,8 +32,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 100
-#define SIM_TIME 1
+#define POP_SIZE 1000
+#define SIM_TIME 10
 
 //=== Keys ===
 #define KEY_DISPARI 1
