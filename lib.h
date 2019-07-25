@@ -32,8 +32,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 100
-#define SIM_TIME 4
+#define POP_SIZE 1000
+#define SIM_TIME 2
 
 //=== Keys ===
 #define KEY_DISPARI 1
@@ -142,4 +142,5 @@ int initSemInUse(int semId, int semNum);
 
 int initSemAvailable(int semId, int semNum);
 
-
+void exit_student();
+void exit_gestore();

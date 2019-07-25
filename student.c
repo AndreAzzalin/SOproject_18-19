@@ -10,7 +10,6 @@ int flag_no_spam = TRUE;
 int index_POPSIZE = 0;
 
 
-
 int main(int argc, char *argv[]) {
 
     init();
@@ -130,7 +129,6 @@ int main(int argc, char *argv[]) {
 
                 reserveSem(sem_st, INDEX);
 
-
                 flag_no_spam = TRUE;
 
                 /*
@@ -175,7 +173,7 @@ int main(int argc, char *argv[]) {
                             msg_queue.student_mitt = getpid();
 
                             if (msgsnd(my_msg_queue, &msg_queue, sizeof(msg_queue) - sizeof(long), 0) < 0)
-                                TEST_ERROR("Invio invito")
+                            TEST_ERROR("Invio invito")
 
                         }
                     }
@@ -275,17 +273,7 @@ void init() {
 
 void signal_handler(int signalVal) {
     if (signalVal == SIGINT) {
-
-        if (SH_INDEX.voto_SO > 0) {
-            printf("STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
-        } else {
-            printf("STUDENTE[%d] voto Sistemi Operativi: BOCCIATO \n", SH_INDEX.matricola);
-        }
-
-        //stacco frammento di memoria da processo
-        shmdt(sm_configValues_pointer);
-        shmdt(sm_students_pointer);
-
+        atexit(exit_student);
         exit(0);
     }
 }
@@ -326,6 +314,20 @@ int getNof_elems() {
 
 int getVoto() {
     return rand() % 13 + 18;
+}
+
+void exit_student() {
+    if (SH_INDEX.voto_SO > 0) {
+        printf("STUDENTE[%d] voto Sistemi Operativi: %d\n", SH_INDEX.matricola, SH_INDEX.voto_SO);
+    } else {
+        printf("STUDENTE[%d] voto Sistemi Operativi: BOCCIATO \n", SH_INDEX.matricola);
+    }
+
+    //stacco frammento di memoria da processo
+    shmdt(sm_configValues_pointer);
+    shmdt(sm_students_pointer);
+
+    releaseSem(sem_id,1);
 }
 
 

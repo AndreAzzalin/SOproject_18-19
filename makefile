@@ -1,7 +1,7 @@
 ST_SOURCE= student student.o lib_sem.o
 GE_SOURCE= gestore gestore.o lib_sem.o
 
-all: gestore student clean run
+all: gestore student run
 
 student: student.o lib_sem.o
 	gcc -o $(ST_SOURCE)
@@ -17,9 +17,6 @@ gestore.o: gestore.c lib.h
 
 lib_sem.o: lib_sem.c lib.h
 	gcc -c lib_sem.c
-
-clean:
-	rm -f gestore.o lib_sem.o student.o
 
 run: gestore
 	./gestore

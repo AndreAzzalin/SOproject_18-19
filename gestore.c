@@ -94,11 +94,7 @@ int main(int argc, char *argv[]) {
     printf(ANSI_COLOR_YELLOW"\n===================== CREAZIONE GRUPPI... =====================\n"ANSI_COLOR_RESET);
 
     //padre attende che tutti i figli terminino prima di terminare
-    for (int j = 0; j < POP_SIZE; ++j) {
-        int retStatus;
-        waitpid(sm_students_pointer->students[j].matricola, &retStatus, 0);
-    }
-
+    atexit(exit_gestore);
 }
 
 
@@ -106,7 +102,7 @@ void signal_handler(int signalVal) {
 
     switch (signalVal) {
         case SIGALRM:
-//blocco l'attività di tutti i processi figli
+            //blocco l'attività di tutti i processi figli
             releaseSem(sem_id, 0);
 
             for (int j = 0; j < POP_SIZE; ++j) {
@@ -120,7 +116,7 @@ void signal_handler(int signalVal) {
 
             printf(ANSI_COLOR_YELLOW "\n====== GUARDARE IL FILE DI LOG PER MAGGIORI INFORMAZIONI ======\n" ANSI_COLOR_RESET);
 
-            reserveSem(sem_id, 1);
+            // reserveSem(sem_id, 1);
             f = fopen("log.txt", "a");
             fprintf(f, "\n============== ELENCO GRUPPI CREATI ===========\n\n");
             fclose(f);
@@ -176,31 +172,42 @@ void signal_handler(int signalVal) {
             fprintf(f, "\n============== ELENCO VOTI STUDENTI ===========\n\n");
             fclose(f);
 
-            releaseSem(sem_id, 1);
+            //  releaseSem(sem_id, 1);
 
             for (int j = 0; j < POP_SIZE; ++j) {
+                if (sm_students_pointer->students[j].matricola != 0) {
+                    f = fopen("log.txt", "a");
+                    if (sm_students_pointer->students[j].voto_SO > 0) {
+                        fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d | %d\n",
+                                sm_students_pointer->students[j].matricola,
+                                sm_students_pointer->students[j].voto_SO, j);
 
-                f = fopen("log.txt", "a");
-                if (sm_students_pointer->students[j].voto_SO > 0) {
-                    fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d\n", sm_students_pointer->students[j].matricola,
-                            sm_students_pointer->students[j].voto_SO);
+                    } else {
+                        fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO | %d\n",
+                                sm_students_pointer->students[j].matricola, j);
+                    }
+                    fclose(f);
 
+
+                    reserveSem(sem_id, 1);
+                    kill(sm_students_pointer->students[j].matricola, SIGINT);
+
+
+                    pid_t child = wait(&status);
+
+                    if (child == -1 && !WIFEXITED(status)) {
+                        TEST_ERROR("Kill processi")
+                    }
                 } else {
-                    fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO\n",
-                            sm_students_pointer->students[j].matricola);
-                }
-                fclose(f);
-
-                kill(sm_students_pointer->students[j].matricola, SIGINT);
-
-                pid_t child = wait(&status);
-
-                if (child == -1 && !WIFEXITED(status)) {
-                    TEST_ERROR("Kill processi")
+                    f = fopen("log.txt", "a");
+                    fprintf(f, "ERRORE STUDENTE[%d] voto Sistemi Operativi: %d | %d\n",
+                            sm_students_pointer->students[j].matricola,
+                            sm_students_pointer->students[j].voto_SO, j);
+                    fclose(f);
                 }
             }
 
-
+            //  TEST_ERROR("Kill processi")
             printf(ANSI_COLOR_RED"\n==================== DEBRIEF SIMULAZIONE ====================\n" ANSI_COLOR_RESET);
 
             /*
@@ -252,13 +259,14 @@ void signal_handler(int signalVal) {
             }
 
             printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
-
             removeIPC();
 
             exit(0);
 
-
         case SIGINT:
+
+            printf(ANSI_COLOR_RED"\n==================== [%d] SIGINT ====================\n" ANSI_COLOR_RESET,
+                   getpid());
 
             removeIPC();
 
@@ -391,6 +399,10 @@ int getConfigValue(char line[1]) {
 }
 
 
-
+void exit_gestore() {
+    for (int i = 0; i < POP_SIZE; ++i) {
+        wait(&status);
+    }
+}
 
 
