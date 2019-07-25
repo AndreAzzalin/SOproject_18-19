@@ -2,6 +2,7 @@
 
 
 int cont, SUM_voto_AdE = 0;
+char *arg_null[] = {NULL};
 
 
 int main(int argc, char *argv[]) {
@@ -252,22 +253,7 @@ void signal_handler(int signalVal) {
 
             printf("\nMedia voti:%.2lf\n", (double) SUM_voto_SO / promossiSO);
 
-
-            if (shmctl(sm_students_id, IPC_RMID, NULL) == -1 ||
-                shmctl(sm_configValues_id, IPC_RMID, NULL) == -1 || semctl(sem_id, 2, IPC_RMID) == -1 ||
-                semctl(sem_st, POP_SIZE, IPC_RMID) == -1 || msgctl(msg_pari, IPC_RMID, NULL) == -1 ||
-                msgctl(msg_dispari, IPC_RMID, NULL) == -1) {
-
-                printf(ANSI_COLOR_YELLOW "\n==================== PULIZIA COMPLETATA ====================\n" ANSI_COLOR_RESET);
-            } else {
-                TEST_ERROR("Pulizia IPC")
-            }
-
-            f = fopen("log.txt", "a");
-            fprintf(f, "\n============== FINE SIMULAZIONE ===========\n\n");
-            fclose(f);
-
-            printf(ANSI_COLOR_RED "\n==================== FINE SIMULAZIONE ======================\n" ANSI_COLOR_RESET);
+            removeIPC();
 
             exit(0);
 
@@ -326,7 +312,6 @@ void init() {
     sigaction(SIGALRM, &sa, &sa_old);
     sigaction(SIGINT, &sa, &sa_old);
 
-
     start_sim_time();
 }
 
@@ -355,6 +340,56 @@ void removeIPC() {
 
     printf(ANSI_COLOR_RED "\n==================== FINE SIMULAZIONE ======================\n" ANSI_COLOR_RESET);
 }
+
+int *read_config() {
+
+    FILE *f = fopen("opt.conf", "r+");
+
+    char nof_elems2_toConvert[20];
+    char nof_elems3_toConvert[20];
+    char nof_elems4_toConvert[20];
+    char nof_invites_toConvert[20];
+    char max_reject_toConvert[20];
+
+    fscanf(f, "%s %s %s %s %s", nof_elems2_toConvert, nof_elems3_toConvert, nof_elems4_toConvert, nof_invites_toConvert,
+           max_reject_toConvert);
+
+
+    int nof_elems2 = getPercentNof_elems(getConfigValue(nof_elems2_toConvert), POP_SIZE);
+    int nof_elems3 = getPercentNof_elems(getConfigValue(nof_elems3_toConvert), POP_SIZE);
+    int nof_elems4 = getPercentNof_elems(getConfigValue(nof_elems4_toConvert), POP_SIZE);
+
+    int nof_invites = getConfigValue(nof_invites_toConvert);
+    int max_reject = getConfigValue(max_reject_toConvert);
+
+    fclose(f);
+
+    static int configVariables[5];
+    configVariables[0] = nof_elems2;
+    configVariables[1] = nof_elems3;
+    configVariables[2] = nof_elems4;
+    configVariables[3] = nof_invites;
+    configVariables[4] = max_reject;
+
+    return configVariables;
+}
+
+int getPercentNof_elems(int percent, int nStudents) {
+    float val = (float) (nStudents * percent) / 100;
+    return (int) round(val);
+}
+
+int getConfigValue(char line[1]) {
+    int value = 0;
+    char *token = strtok(line, ":");
+
+    while (token != NULL) {
+        value = atoi(token);
+        token = strtok(NULL, line);
+    }
+    return value;
+}
+
 
 
 

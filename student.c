@@ -208,7 +208,6 @@ int main(int argc, char *argv[]) {
     }
 }
 
-
 void init() {
 
     //per random
@@ -306,6 +305,32 @@ int getMsgQueue() {
         return msgget(KEY_DISPARI, IPC_CREAT | 0666);
     }
 }
+
+int getNof_elems() {
+
+//questo metodo è eseguito solo con lock del semaforo 1
+    if (sm_configValues_pointer->config_values[0] > 0) {
+        sm_configValues_pointer->config_values[0]--;
+        return 2;
+
+    } else if (sm_configValues_pointer->config_values[1] > 0) {
+        sm_configValues_pointer->config_values[1]--;
+        return 3;
+
+    } else if (sm_configValues_pointer->config_values[2] > 0) {
+        sm_configValues_pointer->config_values[2]--;
+        return 4;
+    }
+
+}
+
+int getVoto() {
+    return rand() % 13 + 18;
+}
+
+
+
+
 
 
 
