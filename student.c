@@ -243,6 +243,7 @@ void init() {
     SH_INDEX.voto_SO = 0;
     SH_INDEX.libero = TRUE;
 
+
     SH_INDEX.nof_invites_send = nof_invites;
     SH_INDEX.nof_reject = nof_reject;
 
@@ -262,6 +263,12 @@ void init() {
 
     //decremento sem0
     reserveSem(sem_id, 0);
+
+    reserveSem(sem_id,1);
+    f = fopen("log.txt", "a");
+    fprintf(f, " STUDENTE[%d] voto_AdE: %d \n", SH_INDEX.matricola,SH_INDEX.voto_AdE);
+    fclose(f);
+    releaseSem(sem_id,1);
 
     //punto alla funzione che gestirà il segnale
     sa.sa_handler = &signal_handler;
@@ -327,7 +334,7 @@ void exit_student() {
     shmdt(sm_configValues_pointer);
     shmdt(sm_students_pointer);
 
-    releaseSem(sem_id,1);
+    releaseSem(sem_id, 1);
 }
 
 

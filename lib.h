@@ -19,6 +19,8 @@
  printf("[%d] Errore %d (%s) -> %s\n",getpid(),errno, strerror(errno),x);};
 
 
+
+
 #define TRUE 1
 #define FALSE 0
 
@@ -32,8 +34,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 1000
-#define SIM_TIME 2
+#define POP_SIZE 500
+#define SIM_TIME 3
 
 //=== Keys ===
 #define KEY_DISPARI 1
@@ -43,6 +45,7 @@
 
 
 //=== macro per indici ===
+#define GEST_INDEX(x) pid_students[x]%POP_SIZE
 #define INDEX getpid()%POP_SIZE
 #define INDEX_MITT msg_queue.student_mitt%POP_SIZE
 #define SH_INDEX sm_students_pointer->students[INDEX]
@@ -126,7 +129,7 @@ int getPercentNof_elems(int percent, int nStudents);
 
 int getMsgQueue();
 
-int getConfigValue(char line[1]) ;
+int getConfigValue(char line[1]);
 
 //==== SEMAFORI ====//
 
@@ -143,4 +146,6 @@ int initSemInUse(int semId, int semNum);
 int initSemAvailable(int semId, int semNum);
 
 void exit_student();
+
 void exit_gestore();
+
