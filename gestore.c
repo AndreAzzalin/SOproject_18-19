@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
             sm_configValues_pointer->config_values[2],
             sm_configValues_pointer->config_values[3], sm_configValues_pointer->config_values[4]);
 
+    fprintf(f, "\n================ STUDENTI SIMULAZIONE ===============\n");
     fclose(f);
 
     for (int i = 0; i < POP_SIZE; i++) {
@@ -104,7 +105,6 @@ int main(int argc, char *argv[]) {
     }
 
     start_sim_time();
-
     printf(ANSI_COLOR_YELLOW"\n===================== CREAZIONE GRUPPI... =====================\n"ANSI_COLOR_RESET);
 
     //padre attende che tutti i figli terminino prima di terminare
@@ -189,25 +189,17 @@ void signal_handler(int signalVal) {
             fprintf(f, "\n============== ELENCO VOTI STUDENTI ===========\n\n");
             fclose(f);
 
-            for (int k = 0; k < POP_SIZE; ++k) {
-
-                f = fopen("log.txt", "a");
-                fprintf(f, "STUD[%d]\n", sm_students_pointer->students[GEST_INDEX(k)].matricola);
-                fclose(f);
-            }
-
-
             for (int j = 0; j < POP_SIZE; ++j) {
 
                 f = fopen("log.txt", "a");
                 if (sm_students_pointer->students[GEST_INDEX(j)].voto_SO > 0) {
-                    fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d | %d\n",
+                    fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: %d\n",
                             sm_students_pointer->students[GEST_INDEX(j)].matricola,
-                            sm_students_pointer->students[GEST_INDEX(j)].voto_SO, j);
+                            sm_students_pointer->students[GEST_INDEX(j)].voto_SO);
 
                 } else {
-                    fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO | %d\n",
-                            sm_students_pointer->students[GEST_INDEX(j)].matricola, j);
+                    fprintf(f, "STUDENTE[%d] voto Sistemi Operativi: BOCCIATO\n",
+                            sm_students_pointer->students[GEST_INDEX(j)].matricola);
                 }
                 fclose(f);
 
@@ -281,7 +273,10 @@ void signal_handler(int signalVal) {
 
             releaseSem(sem_id, 0);
 
-            for (int m = 0; m < POP_SIZE; ++m) {
+            //divido la dimensione in byte dell'intero array per un singolo elemnto, mi ritorna il numero di caselle dell'array
+            int length = sizeof(pid_students) / sizeof(pid_students[0]);
+            for (int m = 0; m < length; ++m) {
+                reserveSem(sem_id, 1);
                 kill(pid_students[m], SIGINT);
             }
 
@@ -335,8 +330,6 @@ void init() {
     //installo handler e controllo errore
     sigaction(SIGALRM, &sa, &sa_old);
     sigaction(SIGINT, &sa, &sa_old);
-
-    // start_sim_time();
 }
 
 void start_sim_time() {
