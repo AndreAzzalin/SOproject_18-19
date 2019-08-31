@@ -213,7 +213,7 @@ void init() {
 
     //mi allaccio alle strutture IPC
 
-    sem_id = semget(KEY, 2, IPC_CREAT | 0666);
+    sem_id = semget(KEY, 3, IPC_CREAT | 0666);
     sem_st = semget(KEY_ST, POP_SIZE, IPC_CREAT | 0666);
 
     sm_configValues_id = shmget(KEY, sizeof(struct sm_configValues), IPC_CREAT | 0666);
@@ -274,6 +274,10 @@ void init() {
     sa.sa_handler = &signal_handler;
     //installo handler e controllo errore
     sigaction(SIGINT, &sa, &sa_old);
+
+    if(!getSemVal(sem_id,0)){
+        releaseSem(sem_id,2);
+    }
 
     TEST_ERROR("Init student")
 }

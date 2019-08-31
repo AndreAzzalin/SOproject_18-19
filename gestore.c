@@ -290,7 +290,7 @@ void signal_handler(int signalVal) {
 
 void init() {
 
-    sem_id = semget(KEY, 2, IPC_CREAT | 0666);
+    sem_id = semget(KEY, 3, IPC_CREAT | 0666);
     sem_st = semget(KEY_ST, POP_SIZE, IPC_CREAT | 0666);
 
     sm_configValues_id = shmget(KEY, sizeof(struct sm_configValues), IPC_CREAT | 0666);
@@ -311,6 +311,7 @@ void init() {
     //inizializzo valore semafori
     semctl(sem_id, 0, SETVAL, POP_SIZE);
     initSemAvailable(sem_id, 1);
+    initSemInUse(sem_id, 2);
 
     for (int j = 0; j < POP_SIZE; ++j) {
         initSemAvailable(sem_st, j);
@@ -333,22 +334,16 @@ void init() {
 }
 
 void start_sim_time() {
-    int alarmClock = FALSE;
 
-    while (getSemVal(sem_id, 0)) {
-        alarmClock = TRUE;
-    }
-
-    if (alarmClock) {
-        alarm(SIM_TIME);
-    }
+    reserveSem(sem_id, 2);
+    alarm(SIM_TIME);
 
 }
 
 void removeIPC() {
 
     if (shmctl(sm_students_id, IPC_RMID, NULL) == -1 ||
-        shmctl(sm_configValues_id, IPC_RMID, NULL) == -1 || semctl(sem_id, 2, IPC_RMID) == -1 ||
+        shmctl(sm_configValues_id, IPC_RMID, NULL) == -1 || semctl(sem_id, 3, IPC_RMID) == -1 ||
         semctl(sem_st, POP_SIZE, IPC_RMID) == -1 || msgctl(msg_pari, IPC_RMID, NULL) == -1 ||
         msgctl(msg_dispari, IPC_RMID, NULL) == -1) {
 
