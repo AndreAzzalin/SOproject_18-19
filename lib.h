@@ -54,6 +54,14 @@
 #define G_INDEX sm_students_pointer->groups[INDEX]
 #define G_MITT_INDEX sm_students_pointer->groups[INDEX_MITT]
 
+#ifdef __linux__
+union semun {
+    int val; /* for SETVAL */
+    struct semid_ds *buf;  /* for IPC_STAT e IPC_SET */
+    ushort *array; /* per GETALL e SETALL */
+};
+#endif
+
 
 //==== variabili processi ====
 int status;
@@ -67,13 +75,6 @@ int sm_configValues_id;
 int sm_students_id;
 int msg_pari;
 int msg_dispari;
-
-union semun {
-    int val; /* for SETVAL */
-    struct semid_ds *buf;  /* for IPC_STAT e IPC_SET */
-    ushort *array; /* per GETALL e SETALL */
-};
-
 
 struct sigaction sa, sa_old;
 struct my_msg msg_queue;
