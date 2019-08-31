@@ -34,8 +34,8 @@
 #define PARI getpid()%2==0
 #define DISPARI getpid()%2!=0
 
-#define POP_SIZE 250
-#define SIM_TIME 5
+#define POP_SIZE 100
+#define SIM_TIME 3
 
 //=== Keys ===
 #define KEY_DISPARI 1
@@ -64,7 +64,6 @@ FILE *f;
 int sem_id;
 int sem_st;
 int sm_configValues_id;
-
 int sm_students_id;
 int msg_pari;
 int msg_dispari;

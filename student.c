@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     while (TRUE) {
 
 
-        //uso il sem0 per capire quando tutti i processi sono stati caricati
+        //uso il sem0 come flag per capire quando tutti i processi sono stati caricati
         if (!getSemVal(sem_id, 0)) {
 
             //se nella coda di messaggi ci sono msg con mtype = al mio pid, leggo il messaggio
